@@ -1,0 +1,15 @@
+{
+  "user_name": "J PRITHVI",
+  "email": "prithvi.j@outlook.com",
+  "provider": "Bharat Mobile OTP (PhonePe)",
+  "store_name": "Sri Manjunatha Provision Store",
+  "locality": "Indiranagar 100ft Rd, Bengaluru",
+  "upi_id": "prithvi.j@ibl",
+  "preferred_lang": "Kannada (ಕನ್ನಡ)",
+  "max_udhaar_days": 7,
+  "phone": "+91 9980478475",
+  "gstin": "29AAAAA1234A1Z5",
+  "branch": "Indiranagar Main Store",
+  "auto_nudge_enabled": true,
+  "max_credit_limit": 5000
+}

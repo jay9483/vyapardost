@@ -1,0 +1,114 @@
+[
+  {
+    "item_name": "Aashirvaad Atta 5kg",
+    "category": "Flour & Grains",
+    "stock_units": 46,
+    "unit": "bags",
+    "cost_price": 240,
+    "sell_price": 275
+  },
+  {
+    "item_name": "Toor Dal 2kg",
+    "category": "Pulses & Dals",
+    "stock_units": 53,
+    "unit": "packets",
+    "cost_price": 280,
+    "sell_price": 310
+  },
+  {
+    "item_name": "Gold Winner Sunflower Oil 1L",
+    "category": "Edible Oils",
+    "stock_units": 91,
+    "unit": "pouches",
+    "cost_price": 125,
+    "sell_price": 140
+  },
+  {
+    "item_name": "Nandini Special Milk 1L",
+    "category": "Dairy",
+    "stock_units": 298,
+    "unit": "packets",
+    "cost_price": 48,
+    "sell_price": 52
+  },
+  {
+    "item_name": "Nandini Pure Ghee 500ml",
+    "category": "Dairy",
+    "stock_units": 6,
+    "unit": "jars",
+    "cost_price": 290,
+    "sell_price": 320
+  },
+  {
+    "item_name": "Tata Salt 1kg",
+    "category": "Spices & Essentials",
+    "stock_units": 50,
+    "unit": "packets",
+    "cost_price": 22,
+    "sell_price": 25
+  },
+  {
+    "item_name": "Sona Masoori Rice 10kg",
+    "category": "Flour & Grains",
+    "stock_units": 46,
+    "unit": "bags",
+    "cost_price": 580,
+    "sell_price": 640
+  },
+  {
+    "item_name": "Sugar 2kg",
+    "category": "Spices & Essentials",
+    "stock_units": 50,
+    "unit": "packets",
+    "cost_price": 82,
+    "sell_price": 92
+  },
+  {
+    "item_name": "Mysore Sandal Soap (3pk)",
+    "category": "Personal Care",
+    "stock_units": 35,
+    "unit": "packs",
+    "cost_price": 155,
+    "sell_price": 180
+  },
+  {
+    "item_name": "Surf Excel Matic 1kg",
+    "category": "Household Cleaning",
+    "stock_units": 50,
+    "unit": "packets",
+    "cost_price": 120,
+    "sell_price": 140
+  },
+  {
+    "item_name": "Brooke Bond Red Label Tea 250g",
+    "category": "Beverages",
+    "stock_units": 50,
+    "unit": "boxes",
+    "cost_price": 125,
+    "sell_price": 145
+  },
+  {
+    "item_name": "Maggi 2-Minute Noodles (4pk)",
+    "category": "Packaged Food",
+    "stock_units": 46,
+    "unit": "packs",
+    "cost_price": 48,
+    "sell_price": 56
+  },
+  {
+    "item_name": "Farm Fresh Eggs (6pk)",
+    "category": "Dairy & Poultry",
+    "stock_units": 57,
+    "unit": "trays",
+    "cost_price": 36,
+    "sell_price": 42
+  },
+  {
+    "item_name": "Parle-G",
+    "category": "Packaged Food",
+    "stock_units": 42,
+    "unit": "packets",
+    "cost_price": 8,
+    "sell_price": 10
+  }
+]
