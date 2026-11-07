@@ -372,31 +372,9 @@ site_css = f"""<style>
     }}
 
     
-    /* Clickable KPI Bento Tile (100% In-Memory Reactive WebSocket Updates • Zero Page Refresh) */
+    /* Clickable KPI Bento Tile - Both the Card AND the Button are functional & visible */
     div[data-testid="stColumn"]:has(.kpi-card-tile) {{
         position: relative !important;
-    }}
-    div[data-testid="stColumn"]:has(.kpi-card-tile) div[data-testid="stButton"] {{
-        position: absolute !important;
-        inset: 0 !important;
-        width: 100% !important;
-        height: 100% !important;
-        z-index: 25 !important;
-        margin: 0 !important;
-        padding: 0 !important;
-    }}
-    div[data-testid="stColumn"]:has(.kpi-card-tile) div[data-testid="stButton"] button {{
-        width: 100% !important;
-        height: 100% !important;
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        color: transparent !important;
-        cursor: pointer !important;
-        border-radius: var(--radius-card) !important;
-        opacity: 0 !important;
-        margin: 0 !important;
-        padding: 0 !important;
     }}
     .kpi-card-tile, .kpi-tile-link {{
         display: block !important;
@@ -405,8 +383,32 @@ site_css = f"""<style>
     }}
     div[data-testid="stColumn"]:has(.kpi-card-tile):hover .kpi-card-tile,
     div[data-testid="stColumn"]:has(.kpi-card-tile):hover .kpi-tile-link {{
-        transform: translateY(-4px) scale(1.008) !important;
+        transform: translateY(-3px) scale(1.008) !important;
         box-shadow: 0 16px 36px rgba(0, 0, 0, 0.22) !important;
+    }}
+    div[data-testid="stColumn"]:has(.kpi-card-tile) div[data-testid="stButton"] {{
+        margin-top: 8px !important;
+        position: relative !important;
+        z-index: 10 !important;
+    }}
+    div[data-testid="stColumn"]:has(.kpi-card-tile) div[data-testid="stButton"] button {{
+        width: 100% !important;
+        border-radius: 12px !important;
+        font-weight: 800 !important;
+        font-size: 0.82rem !important;
+        padding: 8px 12px !important;
+        background: {btn_bg} !important;
+        color: {btn_text} !important;
+        border: 1.5px solid var(--hairline-border) !important;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06) !important;
+        cursor: pointer !important;
+        opacity: 1 !important;
+        transition: all 0.2s ease !important;
+    }}
+    div[data-testid="stColumn"]:has(.kpi-card-tile) div[data-testid="stButton"] button:hover {{
+        border-color: var(--accent-color) !important;
+        color: var(--accent-color) !important;
+        transform: translateY(-1px) !important;
     }}
 
 /* Streamlit Tab Styling - High contrast white text on active tab */
@@ -469,8 +471,16 @@ site_css = f"""<style>
     }}
 
     /* =========================================================================
-       STREAMLIT SELECTBOXES & VIRTUAL DROPDOWNS (100% CONTRAST & DRAG/SCROLL)
+       STREAMLIT SELECTBOXES & VIRTUAL DROPDOWNS (100% CONTRAST & VISIBILITY)
        ========================================================================= */
+
+    /* Streamlit Root Theme Overrides */
+    :root, html, body, .stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {{
+        --secondary-background-color: {card_bg} !important;
+        --background-color: {bg_base} !important;
+        --text-color: {text_primary} !important;
+        color-scheme: {'dark' if is_dark else 'light'} !important;
+    }}
 
     /* Label */
     .stSelectbox label,
@@ -481,170 +491,118 @@ site_css = f"""<style>
         font-weight: 700 !important;
     }}
 
-    /* Closed Selectbox Box / Container */
-    html body .stSelectbox > div,
-    html body [data-testid="stSelectbox"] > div,
-    html body [data-testid="stSelectbox"] [class*="react-aria-Group"],
-    html body [data-testid="stSelectbox"] [class*="e1oobldh0"],
-    html body div[class*="e1oobldh0"],
-    html body .stMultiSelect > div,
-    html body [data-testid="stMultiSelect"] > div {{
+    /* Closed Selectbox Box / Container & Inputs */
+    div[data-baseweb="select"],
+    div[data-baseweb="select"] > div,
+    [data-testid="stSelectbox"] > div,
+    [data-testid="stMultiSelect"] > div,
+    [data-testid="stTextInput"] > div > div,
+    [data-testid="stNumberInput"] > div > div,
+    [data-testid="stTextArea"] > div > div,
+    [data-testid="stDateInput"] > div > div {{
         background-color: {input_bg} !important;
         background: {input_bg} !important;
-        color: var(--text-primary) !important;
+        color: {text_primary} !important;
         border: 1.5px solid var(--hairline-border) !important;
         border-radius: 12px !important;
     }}
 
-    /* Closed Selectbox Input / Value Display */
-    html body .stSelectbox input,
-    html body [data-testid="stSelectbox"] input,
-    html body [data-testid="stSelectbox"] [class*="react-aria-Input"],
-    html body [data-testid="stSelectbox"] [class*="e1oobldh1"],
-    html body div[class*="e1oobldh1"],
-    html body .stMultiSelect input,
-    html body [data-testid="stMultiSelect"] input {{
-        color: var(--text-primary) !important;
+    div[data-baseweb="select"] *,
+    [data-testid="stSelectbox"] *,
+    [data-testid="stMultiSelect"] * {{
+        color: {text_primary} !important;
+        -webkit-text-fill-color: {text_primary} !important;
+    }}
+
+    /* Closed Selectbox Selected Text */
+    div[data-baseweb="select"] div[class*="singleValue"],
+    div[data-baseweb="select"] div[class*="ValueContainer"],
+    div[data-baseweb="select"] div[aria-selected="true"],
+    [data-testid="stSelectbox"] span,
+    [data-testid="stSelectbox"] p,
+    [data-testid="stSelectbox"] div[data-testid="stMarkdownContainer"] p {{
+        color: {text_primary} !important;
+        -webkit-text-fill-color: {text_primary} !important;
         font-weight: 700 !important;
-        background: transparent !important;
     }}
 
-    /* Icons inside Closed Selectbox */
-    html body .stSelectbox svg,
-    html body [data-testid="stSelectbox"] svg,
-    html body .stMultiSelect svg,
-    html body [data-testid="stMultiSelect"] svg,
-    html body [data-testid="stSelectbox"] span,
-    html body [data-testid="stSelectbox"] p,
-    html body [data-testid="stSelectbox"] div {{
-        fill: var(--text-primary) !important;
-        color: var(--text-primary) !important;
-    }}
-
-    /* Floating Popover Container (Outside or Inside .stApp) */
-    html body [data-testid="stSelectboxVirtualDropdown"],
-    html body [data-testid="stMultiSelectDropdown"],
-    html body div[class*="react-aria-Popover"],
-    html body div[class*="e1oobldh4"],
-    html body div[data-testid*="Dropdown"],
-    html body div[data-testid*="VirtualDropdown"],
-    html body [data-baseweb="popover"],
-    html body [data-baseweb="menu"] {{
+    /* Floating Popover Container */
+    div[data-baseweb="popover"],
+    div[data-baseweb="popover"] > div,
+    div[data-baseweb="menu"],
+    div[data-baseweb="menu"] > ul,
+    ul[role="listbox"],
+    div[role="listbox"],
+    [data-testid="stSelectboxVirtualDropdown"],
+    [data-testid="stMultiSelectDropdown"],
+    [class*="react-aria-Popover"],
+    [class*="react-aria-ListBox"] {{
         background-color: {card_bg} !important;
         background: {card_bg} !important;
-        color: var(--text-primary) !important;
+        color: {text_primary} !important;
         border: 1.5px solid var(--hairline-border) !important;
         border-radius: 14px !important;
         box-shadow: var(--shadow-elevation) !important;
-        max-height: 320px !important;
-        overflow: hidden !important;
-        z-index: 99999 !important;
     }}
 
-    /* Scrollable Virtualized List Container (Enables Dragging & Scrolling) */
-    html body [data-testid="stSelectboxVirtualDropdown"] > div,
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="react-aria-ListBox"],
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="e1oobldh5"],
-    html body div[class*="e1oobldh5"],
-    html body ul[role="listbox"],
-    html body div[role="listbox"] {{
-        background-color: {card_bg} !important;
-        background: {card_bg} !important;
-        max-height: 280px !important;
-        overflow-y: auto !important;
-        overflow-x: hidden !important;
-        pointer-events: auto !important;
-        touch-action: pan-y !important;
-        -webkit-overflow-scrolling: touch !important;
-        scrollbar-width: thin !important;
-        scrollbar-color: {scroll_thumb} {scroll_track} !important;
-    }}
-
-    /* Visible Custom Scrollbar for Smooth Dragging */
-    html body div[class*="e1oobldh5"]::-webkit-scrollbar,
-    html body [data-testid="stSelectboxVirtualDropdown"] ::-webkit-scrollbar,
-    html body div[role="listbox"]::-webkit-scrollbar,
-    html body ul[role="listbox"]::-webkit-scrollbar {{
-        width: 8px !important;
-        height: 8px !important;
-        display: block !important;
-    }}
-    html body div[class*="e1oobldh5"]::-webkit-scrollbar-track,
-    html body [data-testid="stSelectboxVirtualDropdown"] ::-webkit-scrollbar-track,
-    html body div[role="listbox"]::-webkit-scrollbar-track,
-    html body ul[role="listbox"]::-webkit-scrollbar-track {{
-        background: {scroll_track} !important;
-        border-radius: 4px !important;
-    }}
-    html body div[class*="e1oobldh5"]::-webkit-scrollbar-thumb,
-    html body [data-testid="stSelectboxVirtualDropdown"] ::-webkit-scrollbar-thumb,
-    html body div[role="listbox"]::-webkit-scrollbar-thumb,
-    html body ul[role="listbox"]::-webkit-scrollbar-thumb {{
-        background: {scroll_thumb} !important;
-        border-radius: 4px !important;
-    }}
-    html body div[class*="e1oobldh5"]::-webkit-scrollbar-thumb:hover,
-    html body [data-testid="stSelectboxVirtualDropdown"] ::-webkit-scrollbar-thumb:hover,
-    html body div[role="listbox"]::-webkit-scrollbar-thumb:hover,
-    html body ul[role="listbox"]::-webkit-scrollbar-thumb:hover {{
-        background: var(--accent-color) !important;
-    }}
-
-    /* Dropdown Items Default Unselected State */
-    html body [data-testid="stSelectboxVirtualDropdown"] [role="option"],
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="react-aria-ListBoxItem"],
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="e1oobldh7"],
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="e1oobldh8"],
-    html body [data-testid="stSelectboxVirtualDropdown"] [data-item-hl],
-    html body div[class*="e1oobldh7"],
-    html body div[class*="e1oobldh8"],
-    html body li[role="option"] {{
+    /* Unselected Dropdown Items */
+    div[data-baseweb="menu"] li,
+    ul[role="listbox"] li,
+    div[role="listbox"] div[role="option"],
+    [class*="react-aria-ListBoxItem"] {{
         background-color: transparent !important;
         background: transparent !important;
-        color: var(--text-primary) !important;
-        fill: var(--text-primary) !important;
-        font-weight: 600 !important;
-        cursor: pointer !important;
+        color: {text_primary} !important;
+        -webkit-text-fill-color: {text_primary} !important;
     }}
-    html body [data-testid="stSelectboxVirtualDropdown"] [role="option"] *,
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="react-aria-ListBoxItem"] *,
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="e1oobldh7"] *,
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="e1oobldh8"] *,
-    html body div[class*="e1oobldh7"] *,
-    html body div[class*="e1oobldh8"] *,
-    html body [data-item-hl],
-    html body [data-item-hl] * {{
-        color: var(--text-primary) !important;
-        fill: var(--text-primary) !important;
-        font-weight: 600 !important;
+    div[data-baseweb="menu"] li *,
+    ul[role="listbox"] li *,
+    div[role="listbox"] div[role="option"] *,
+    [class*="react-aria-ListBoxItem"] * {{
+        color: {text_primary} !important;
+        -webkit-text-fill-color: {text_primary} !important;
     }}
 
-    /* Dropdown Items Hovered & Selected Active State */
-    html body [data-testid="stSelectboxVirtualDropdown"] [role="option"]:hover,
-    html body [data-testid="stSelectboxVirtualDropdown"] [role="option"][aria-selected="true"],
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="react-aria-ListBoxItem"][data-hovered],
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="react-aria-ListBoxItem"][data-selected],
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="react-aria-ListBoxItem"][data-focused],
-    html body div[class*="e1oobldh7"]:hover,
-    html body div[class*="e1oobldh7"][data-hovered],
-    html body li[role="option"]:hover,
-    html body li[role="option"][aria-selected="true"] {{
-        background-color: var(--accent-color) !important;
-        background: var(--accent-color) !important;
+    /* Hovered & Selected Dropdown Items */
+    div[data-baseweb="menu"] li:hover,
+    div[data-baseweb="menu"] li[aria-selected="true"],
+    ul[role="listbox"] li:hover,
+    ul[role="listbox"] li[aria-selected="true"],
+    div[role="listbox"] div[role="option"]:hover,
+    div[role="listbox"] div[role="option"][aria-selected="true"],
+    [class*="react-aria-ListBoxItem"][data-hovered],
+    [class*="react-aria-ListBoxItem"][data-selected],
+    [class*="react-aria-ListBoxItem"][data-focused] {{
+        background-color: #2563EB !important;
+        background: #2563EB !important;
         color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
     }}
-    html body [data-testid="stSelectboxVirtualDropdown"] [role="option"]:hover *,
-    html body [data-testid="stSelectboxVirtualDropdown"] [role="option"][aria-selected="true"] *,
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="react-aria-ListBoxItem"][data-hovered] *,
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="react-aria-ListBoxItem"][data-selected] *,
-    html body [data-testid="stSelectboxVirtualDropdown"] [class*="react-aria-ListBoxItem"][data-focused] *,
-    html body div[class*="e1oobldh7"]:hover *,
-    html body div[class*="e1oobldh7"][data-hovered] *,
-    html body li[role="option"]:hover *,
-    html body li[role="option"][aria-selected="true"] * {{
+    div[data-baseweb="menu"] li:hover *,
+    div[data-baseweb="menu"] li[aria-selected="true"] *,
+    ul[role="listbox"] li:hover *,
+    ul[role="listbox"] li[aria-selected="true"] *,
+    div[role="listbox"] div[role="option"]:hover *,
+    div[role="listbox"] div[role="option"][aria-selected="true"] *,
+    [class*="react-aria-ListBoxItem"][data-hovered] *,
+    [class*="react-aria-ListBoxItem"][data-selected] *,
+    [class*="react-aria-ListBoxItem"][data-focused] * {{
         color: #FFFFFF !important;
-        fill: #FFFFFF !important;
-        font-weight: 800 !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }}
+
+    /* Streamlit Containers, Expanders & Metrics */
+    [data-testid="stExpander"],
+    [data-testid="stForm"],
+    div[data-testid="stVerticalBlockBorderWrapper"],
+    div[data-testid="stMetric"] {{
+        background: {card_bg} !important;
+        color: {text_primary} !important;
+    }}
+    [data-testid="stExpander"] summary,
+    [data-testid="stExpander"] summary * {{
+        color: {text_primary} !important;
+        -webkit-text-fill-color: {text_primary} !important;
     }}
 
     /* =========================================================================
@@ -1125,6 +1083,26 @@ site_css = f"""<style>
             padding-right: 1rem !important;
         }}
     }}
+
+    /* Universal Dark Background High-Contrast Text Rule */
+    [style*="background:#0"], [style*="background: #0"], [style*="background:#0"] *, [style*="background: #0"] *,
+    [style*="background:#1"], [style*="background: #1"], [style*="background:#1"] *, [style*="background: #1"] *,
+    [style*="background:#2"], [style*="background: #2"], [style*="background:#2"] *, [style*="background: #2"] *,
+    [style*="background-color:#0"], [style*="background-color: #0"], [style*="background-color:#0"] *, [style*="background-color: #0"] *,
+    [style*="background-color:#1"], [style*="background-color: #1"], [style*="background-color:#1"] *, [style*="background-color: #1"] *,
+    [style*="background-color:#2"], [style*="background-color: #2"], [style*="background-color:#2"] *, [style*="background-color: #2"] *,
+    [style*="rgb(15, 23, 42)"], [style*="rgb(15, 23, 42)"] *,
+    [style*="rgba(15, 23, 42"], [style*="rgba(15, 23, 42"] *,
+    [style*="rgba(11, 15, 25"], [style*="rgba(11, 15, 25"] *,
+    [style*="rgba(30, 41, 59"], [style*="rgba(30, 41, 59"] *,
+    [style*="rgba(37, 99, 235"], [style*="rgba(37, 99, 235"] *,
+    [style*="rgba(26, 86, 219"], [style*="rgba(26, 86, 219"] *,
+    [style*="rgba(0, 0, 0"], [style*="rgba(0, 0, 0"] *,
+    pre, code, pre *, code *,
+    .vip-merchant-holographic-pass, .vip-merchant-holographic-pass * {{
+        color: #FFFFFF !important;
+        -webkit-text-fill-color: #FFFFFF !important;
+    }}
 </style>
 """
 st.markdown(site_css, unsafe_allow_html=True)
@@ -1135,110 +1113,115 @@ count_up_script = """
 <script>
 (function() {
     function runLiveCountUp() {
-        const counters = window.parent.document.querySelectorAll('.kpi-animated-num');
-        counters.forEach(el => {
-            if (el.getAttribute('data-animated') === 'true') return;
-            const target = parseFloat(el.getAttribute('data-val') || '0');
-            const prefix = el.getAttribute('data-prefix') || '';
-            const suffix = el.getAttribute('data-suffix') || '';
-            const isFloat = el.getAttribute('data-val').includes('.');
-            const duration = 1100;
-            const start = performance.now();
-            el.setAttribute('data-animated', 'true');
-            
-            function step(timestamp) {
-                const elapsed = timestamp - start;
-                const progress = Math.min(elapsed / duration, 1);
-                const ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-                const current = target * ease;
+        try {
+            var doc = window.parent.document;
+            if (!doc) return;
+            var counters = doc.querySelectorAll('.kpi-animated-num');
+            counters.forEach(function(el) {
+                if (el.getAttribute('data-animated') === 'true') return;
+                var rawVal = el.getAttribute('data-val') || '0';
+                var target = parseFloat(rawVal);
+                if (isNaN(target)) return;
+                var prefix = el.getAttribute('data-prefix') || '';
+                var suffix = el.getAttribute('data-suffix') || '';
+                var isFloat = rawVal.includes('.');
+                // Under 1 second: 750 milliseconds live datasheet extraction
+                var duration = 750;
+                var start = performance.now();
+                el.setAttribute('data-animated', 'true');
                 
-                if (isFloat) {
-                    el.innerText = prefix + current.toFixed(1) + suffix;
-                } else {
-                    el.innerText = prefix + Math.floor(current).toLocaleString('en-IN') + suffix;
-                }
-                
-                if (progress < 1) {
-                    window.requestAnimationFrame(step);
-                } else {
+                function step(timestamp) {
+                    var elapsed = timestamp - start;
+                    var progress = Math.min(elapsed / duration, 1);
+                    var ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                    var current = target * ease;
+                    
                     if (isFloat) {
-                        el.innerText = prefix + target.toFixed(1) + suffix;
+                        el.innerText = prefix + current.toFixed(1) + suffix;
                     } else {
-                        el.innerText = prefix + Math.floor(target).toLocaleString('en-IN') + suffix;
+                        el.innerText = prefix + Math.floor(current).toLocaleString('en-IN') + suffix;
+                    }
+                    
+                    if (progress < 1) {
+                        window.requestAnimationFrame(step);
+                    } else {
+                        if (isFloat) {
+                            el.innerText = prefix + target.toFixed(1) + suffix;
+                        } else {
+                            el.innerText = prefix + Math.floor(target).toLocaleString('en-IN') + suffix;
+                        }
                     }
                 }
-            }
-            window.requestAnimationFrame(step);
-        });
+                window.requestAnimationFrame(step);
+            });
+        } catch(e) {}
     }
-    setTimeout(runLiveCountUp, 100);
-    setTimeout(runLiveCountUp, 500);
+    // Continuous observer ensures newly opened logs immediately count up from 0 to target in < 1s
+    setInterval(runLiveCountUp, 100);
 })();
 </script>
 """
 components.html(count_up_script, height=0, width=0)
 
-# Continuous High-Contrast Dropdown & Toast Observer (Guarantees zero dark blue clashes in Light Mode)
-contrast_observer_script = """
+# Continuous High-Contrast Dropdown & Toast Observer (Guarantees zero dark mode leakage in Light Mode)
+is_light_js = "true" if not is_dark else "false"
+contrast_observer_script = f"""
 <script>
-(function() {
-    function enforceHighContrast() {
-        try {
+(function() {{
+    var isLight = {is_light_js};
+    function enforceHighContrast() {{
+        try {{
             var doc = window.parent.document;
             if (!doc) return;
-            var isLight = doc.body.innerText.includes('Click for Dark Mode');
             
-            var popovers = doc.querySelectorAll('[data-testid="stSelectboxVirtualDropdown"], [class*="react-aria-Popover"], [class*="e1oobldh4"], [data-baseweb="popover"], [data-baseweb="menu"]');
-            popovers.forEach(function(el) {
-                el.style.setProperty('background-color', isLight ? '#FFFFFF' : '#0F172A', 'important');
-                el.style.setProperty('background', isLight ? '#FFFFFF' : '#0F172A', 'important');
-                el.style.setProperty('color', isLight ? '#0F172A' : '#F8FAFC', 'important');
-                el.style.setProperty('border', isLight ? '1.5px solid rgba(0,0,0,0.16)' : '1.5px solid rgba(255,255,255,0.16)', 'important');
-            });
-            
-            var listboxes = doc.querySelectorAll('[class*="react-aria-ListBox"], [class*="e1oobldh5"], [role="listbox"]');
-            listboxes.forEach(function(el) {
-                el.style.setProperty('background-color', isLight ? '#FFFFFF' : '#0F172A', 'important');
-                el.style.setProperty('background', isLight ? '#FFFFFF' : '#0F172A', 'important');
-            });
+            // Set root color-scheme
+            doc.documentElement.style.colorScheme = isLight ? 'light' : 'dark';
+            doc.documentElement.setAttribute('data-theme', isLight ? 'light' : 'dark');
 
-            var options = doc.querySelectorAll('[role="option"], [class*="react-aria-ListBoxItem"], [class*="e1oobldh7"]');
-            options.forEach(function(el) {
-                var isSelected = el.hasAttribute('data-hovered') || el.hasAttribute('data-selected') || el.getAttribute('aria-selected') === 'true';
-                if (isSelected) {
-                    el.style.setProperty('background-color', '#2563EB', 'important');
-                    el.style.setProperty('background', '#2563EB', 'important');
-                    el.style.setProperty('color', '#FFFFFF', 'important');
-                } else {
-                    el.style.setProperty('background-color', 'transparent', 'important');
-                    el.style.setProperty('background', 'transparent', 'important');
-                    el.style.setProperty('color', isLight ? '#0F172A' : '#F8FAFC', 'important');
-                }
-                var highlights = el.querySelectorAll('[data-item-hl], [class*="e1oobldh8"], span, div');
-                highlights.forEach(function(h) {
-                    h.style.setProperty('color', isSelected ? '#FFFFFF' : (isLight ? '#0F172A' : '#F8FAFC'), 'important');
-                });
-            });
+            // Closed Selectboxes & Inputs
+            var selectBoxes = doc.querySelectorAll('[data-testid="stSelectbox"] > div, [data-testid="stMultiSelect"] > div, div[data-baseweb="select"]');
+            selectBoxes.forEach(function(sb) {{
+                sb.style.setProperty('background-color', isLight ? '#FFFFFF' : '#0F172A', 'important');
+                sb.style.setProperty('background', isLight ? '#FFFFFF' : '#0F172A', 'important');
+                var txts = sb.querySelectorAll('*');
+                txts.forEach(function(t) {{
+                    t.style.setProperty('color', isLight ? '#0F172A' : '#F8FAFC', 'important');
+                    t.style.setProperty('-webkit-text-fill-color', isLight ? '#0F172A' : '#F8FAFC', 'important');
+                }});
+            }});
 
-            var toasts = doc.querySelectorAll('[data-testid="stToast"], .stToast, [class*="ebngmqm1"]');
-            toasts.forEach(function(el) {
-                el.style.setProperty('background-color', isLight ? '#FFFFFF' : '#0F172A', 'important');
-                el.style.setProperty('background', isLight ? '#FFFFFF' : '#0F172A', 'important');
-                el.style.setProperty('color', isLight ? '#0F172A' : '#F8FAFC', 'important');
-                el.style.setProperty('border', isLight ? '1.5px solid rgba(0,0,0,0.16)' : '1.5px solid rgba(255,255,255,0.16)', 'important');
-                var texts = el.querySelectorAll('p, span, div');
-                texts.forEach(function(t) {
-                    if (t.tagName !== 'CODE') {
-                        t.style.setProperty('color', isLight ? '#0F172A' : '#F8FAFC', 'important');
-                    }
-                });
-            });
-        } catch(e) {}
-    }
+            // Popovers & menus
+            var popovers = doc.querySelectorAll('div[data-baseweb="popover"], div[data-baseweb="menu"], [data-testid="stSelectboxVirtualDropdown"], [data-testid="stMultiSelectDropdown"], [class*="react-aria-Popover"]');
+            popovers.forEach(function(p) {{
+                p.style.setProperty('background-color', isLight ? '#FFFFFF' : '#0F172A', 'important');
+                p.style.setProperty('background', isLight ? '#FFFFFF' : '#0F172A', 'important');
+            }});
 
-    setInterval(enforceHighContrast, 200);
-    window.parent.document.addEventListener('click', function() { setTimeout(enforceHighContrast, 30); });
-})();
+            // Options inside popovers
+            var opts = doc.querySelectorAll('div[data-baseweb="menu"] li, ul[role="listbox"] li, div[role="option"], [class*="react-aria-ListBoxItem"]');
+            opts.forEach(function(opt) {{
+                var isSelected = opt.hasAttribute('data-hovered') || opt.hasAttribute('data-selected') || opt.hasAttribute('data-focused') || opt.getAttribute('aria-selected') === 'true';
+                if (isSelected) {{
+                    opt.style.setProperty('background-color', '#2563EB', 'important');
+                    opt.style.setProperty('background', '#2563EB', 'important');
+                    opt.style.setProperty('color', '#FFFFFF', 'important');
+                    opt.style.setProperty('-webkit-text-fill-color', '#FFFFFF', 'important');
+                }} else {{
+                    opt.style.setProperty('background-color', 'transparent', 'important');
+                    opt.style.setProperty('background', 'transparent', 'important');
+                    opt.style.setProperty('color', isLight ? '#0F172A' : '#F8FAFC', 'important');
+                    opt.style.setProperty('-webkit-text-fill-color', isLight ? '#0F172A' : '#F8FAFC', 'important');
+                }}
+                var cld = opt.querySelectorAll('*');
+                cld.forEach(function(c) {{
+                    c.style.setProperty('color', isSelected ? '#FFFFFF' : (isLight ? '#0F172A' : '#F8FAFC'), 'important');
+                    c.style.setProperty('-webkit-text-fill-color', isSelected ? '#FFFFFF' : (isLight ? '#0F172A' : '#F8FAFC'), 'important');
+                }});
+            }});
+        }} catch(e) {{}}
+    }}
+    setInterval(enforceHighContrast, 150);
+}})();
 </script>
 """
 components.html(contrast_observer_script, height=0, width=0)
@@ -1250,9 +1233,7 @@ if "kpi_drilldown_view" not in st.session_state:
 
 if "kpi" in st.query_params:
     qp = st.query_params.get("kpi")
-    if qp == "none":
-        st.session_state.kpi_drilldown_view = None
-    elif qp in ["pulse", "overdue", "cash", "udhaar", "advance", "accuracy"]:
+    if qp in ["pulse", "overdue", "cash", "udhaar", "advance", "accuracy"] and not st.session_state.kpi_drilldown_view:
         st.session_state.kpi_drilldown_view = qp
 
 ALL_AVAILABLE_TABS = [
@@ -1635,8 +1616,12 @@ if st.session_state.get("show_kpi_summary", True):
     def select_kpi_drilldown(kpi_name):
         if st.session_state.get("kpi_drilldown_view") == kpi_name:
             st.session_state.kpi_drilldown_view = None
+            try: st.query_params.pop("kpi", None)
+            except Exception: pass
         else:
             st.session_state.kpi_drilldown_view = kpi_name
+            try: st.query_params["kpi"] = kpi_name
+            except Exception: pass
 
     active_kpi = st.session_state.get("kpi_drilldown_view", None)
 
@@ -1724,7 +1709,7 @@ Master Liquidity Pulse {active_pulse_badge}
 </div>
 </div>'''
         st.markdown(watchdog_html, unsafe_allow_html=True)
-        if st.button("Open Overdue Watchdog", key="btn_tile_overdue", use_container_width=True):
+        if st.button("⚠️ Open Defaulters Roster" if active_kpi != "overdue" else "✖ Close Log", key="btn_tile_overdue", use_container_width=True):
             select_kpi_drilldown("overdue")
             st.rerun()
 
@@ -1745,7 +1730,7 @@ Cash Collections {'●' if active_kpi == "cash" else ""}
 <div style="font-size:0.72rem; color:#10B981; font-weight:700; margin-top:6px; text-align:right;">{'▲ Close Log' if active_kpi == "cash" else '▼ Open Cash Log'}</div>
 </div>'''
         st.markdown(sq1_html, unsafe_allow_html=True)
-        if st.button("Open Cash Inflow", key="btn_tile_cash", use_container_width=True):
+        if st.button("💵 Open Cash Flow Logs" if active_kpi != "cash" else "✖ Close Log", key="btn_tile_cash", use_container_width=True):
             select_kpi_drilldown("cash")
             st.rerun()
 
@@ -1761,7 +1746,7 @@ Udhaar Ledger {'●' if active_kpi == "udhaar" else ""}
 <div style="font-size:0.72rem; color:#EF4444; font-weight:700; margin-top:6px; text-align:right;">{'▲ Close Log' if active_kpi == "udhaar" else '▼ Open Udhaar Roster'}</div>
 </div>'''
         st.markdown(sq2_html, unsafe_allow_html=True)
-        if st.button("Open Udhaar Roster", key="btn_tile_udhaar", use_container_width=True):
+        if st.button("📒 Open Udhaar Roster" if active_kpi != "udhaar" else "✖ Close Log", key="btn_tile_udhaar", use_container_width=True):
             select_kpi_drilldown("udhaar")
             st.rerun()
 
@@ -1777,7 +1762,7 @@ Customer Advances {'●' if active_kpi == "advance" else ""}
 <div style="font-size:0.72rem; color:#A855F7; font-weight:700; margin-top:6px; text-align:right;">{'▲ Close Log' if active_kpi == "advance" else '▼ Open Directory'}</div>
 </div>'''
         st.markdown(sq3_html, unsafe_allow_html=True)
-        if st.button("Open Customer Advance", key="btn_tile_advance", use_container_width=True):
+        if st.button("🟣 Open Customer Directory" if active_kpi != "advance" else "✖ Close Log", key="btn_tile_advance", use_container_width=True):
             select_kpi_drilldown("advance")
             st.rerun()
 
@@ -1793,7 +1778,7 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
 <div style="font-size:0.72rem; color:#38BDF8; font-weight:700; margin-top:6px; text-align:right;">{'▲ Close Log' if active_kpi == "accuracy" else '▼ Open AI Audit'}</div>
 </div>'''
         st.markdown(sq4_html, unsafe_allow_html=True)
-        if st.button("Open AI Audit", key="btn_tile_accuracy", use_container_width=True):
+        if st.button("⭐ Open AI Accuracy Audit" if active_kpi != "accuracy" else "✖ Close Log", key="btn_tile_accuracy", use_container_width=True):
             select_kpi_drilldown("accuracy")
             st.rerun()
 
@@ -1837,6 +1822,71 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
     st.markdown("<div id='kpi_drilldown_section'></div>", unsafe_allow_html=True)
     if active_kpi:
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
+
+        # Live Data Extraction Count-Up Animation (< 1 second)
+        extractor_js = """<script>
+        (function() {
+            function triggerDrilldownCountUp() {
+                try {
+                    var doc = window.parent.document;
+                    if (!doc) return;
+                    var counters = doc.querySelectorAll('.kpi-animated-num');
+                    counters.forEach(function(el) {
+                        var rawVal = el.getAttribute('data-val') || '0';
+                        var target = parseFloat(rawVal);
+                        if (isNaN(target)) return;
+                        var prefix = el.getAttribute('data-prefix') || '';
+                        var suffix = el.getAttribute('data-suffix') || '';
+                        var isFloat = rawVal.includes('.');
+                        var duration = 750;
+                        var start = performance.now();
+                        el.setAttribute('data-animated', 'true');
+                        
+                        function step(timestamp) {
+                            var elapsed = timestamp - start;
+                            var progress = Math.min(elapsed / duration, 1);
+                            var ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
+                            var current = target * ease;
+                            if (isFloat) {
+                                el.innerText = prefix + current.toFixed(1) + suffix;
+                            } else {
+                                el.innerText = prefix + Math.floor(current).toLocaleString('en-IN') + suffix;
+                            }
+                            if (progress < 1) {
+                                window.requestAnimationFrame(step);
+                            } else {
+                                el.innerText = prefix + (isFloat ? target.toFixed(1) : Math.floor(target).toLocaleString('en-IN')) + suffix;
+                            }
+                        }
+                        window.requestAnimationFrame(step);
+                    });
+                } catch(e) {}
+            }
+            triggerDrilldownCountUp();
+            setTimeout(triggerDrilldownCountUp, 50);
+            setTimeout(triggerDrilldownCountUp, 200);
+            setTimeout(function() {
+                try {
+                    var doc = window.parent.document;
+                    if (!doc) return;
+                    var counters = doc.querySelectorAll('.kpi-animated-num');
+                    counters.forEach(function(el) {
+                        var val = el.innerText.trim();
+                        if (val === '0' || val === '₹0' || val === '0.0%' || val === '0 Customers' || val === '0 Bills' || val === '0 Profiles') {
+                            var rawVal = el.getAttribute('data-val') || '0';
+                            var target = parseFloat(rawVal);
+                            var prefix = el.getAttribute('data-prefix') || '';
+                            var suffix = el.getAttribute('data-suffix') || '';
+                            var isFloat = rawVal.includes('.');
+                            el.innerText = prefix + (isFloat ? target.toFixed(1) : Math.floor(target).toLocaleString('en-IN')) + suffix;
+                        }
+                    });
+                } catch(e) {}
+            }, 850);
+        })();
+        </script>"""
+        components.html(extractor_js, height=0, width=0)
+
         # Smooth auto-scroll to drilldown section
         components.html('''<script>
         setTimeout(function() {
@@ -1850,6 +1900,8 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
                 st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
                 if st.button("✖ Close Log View", key="btn_close_kpi_drilldown", use_container_width=True):
                     st.session_state.kpi_drilldown_view = None
+                    try: st.query_params.pop("kpi", None)
+                    except Exception: pass
                     st.rerun()
 
             if active_kpi == "pulse":
@@ -4875,80 +4927,7 @@ def render_tab8_profile_auth():
             if sel_av != st.session_state.get("default_analytics_view"):
                 st.session_state.default_analytics_view = sel_av
 
-            st.markdown("###### 💵 5. Currency Notes Watermark Opacity")
-            curr_op = float(st.session_state.get("bg_overlay_opacity", 0.90))
-            new_op = st.slider("Background Overlay Density (higher = softer watermark):", 0.70, 0.98, curr_op, 0.02, key="sl_bg_opacity")
-            if new_op != curr_op:
-                st.session_state.bg_overlay_opacity = new_op
-                st.rerun()
-
-            st.markdown("###### 📱 Live Theme & Customization Preview")
-            st.markdown(f"""
-            <div style="background:var(--card-bg); backdrop-filter:blur(50px) saturate(180%); border:1px solid var(--hairline-border); border-radius:38px; padding:18px 20px; box-shadow:var(--shadow-elevation); border-left:4px solid {st.session_state.accent_color};">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
-                    <span style="font-size:0.75rem; font-weight:800; color:{st.session_state.accent_color}; text-transform:uppercase;">CUSTOMIZED PREVIEW</span>
-                    <span style="background:{st.session_state.accent_color}; color:white; font-size:0.7rem; font-weight:800; padding:2px 8px; border-radius:100px;">{st.session_state.app_theme.upper()}</span>
-                </div>
-                <div style="font-size:1.2rem; font-weight:800; color:var(--text-primary); font-family:'Sreda', serif;">
-                    {st.session_state.user_profile.get('store_name', 'Sri Manjunatha Provision Store')}
-                </div>
-                <div style="font-size:0.8rem; color:var(--text-secondary); margin:2px 0 10px 0;">
-                    {len(st.session_state.custom_tabs)} Modules Active • {st.session_state.accent_color}
-                </div>
-                <div style="display:flex; gap:8px;">
-                    <div style="background:rgba(255,255,255,0.06); padding:6px 10px; border-radius:12px; border:1px solid var(--hairline-border); flex:1; text-align:center;">
-                        <div style="font-size:0.65rem; color:var(--text-secondary);">SQUIRCLE RADIUS</div>
-                        <div style="font-size:0.88rem; font-weight:800; color:var(--text-primary);">38px (Locked)</div>
-                    </div>
-                    <div style="background:rgba(255,255,255,0.06); padding:6px 10px; border-radius:12px; border:1px solid var(--hairline-border); flex:1; text-align:center;">
-                        <div style="font-size:0.65rem; color:var(--text-secondary);">GLASS BLUR</div>
-                        <div style="font-size:0.88rem; font-weight:800; color:var(--text-primary);">50px (Locked)</div>
-                    </div>
-                </div>
-            </div>
-            """, unsafe_allow_html=True)
-
-    st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
-
-    st.markdown("#### 5️⃣ Production Cloud Deployment & Export Kit")
-    st.caption("Ready to move beyond localhost? Deploy VyaparDost with 1 click to Google Cloud Run, Streamlit Community Cloud, or Docker:")
-
-    dep_col1, dep_col2 = st.columns([2.5, 1.5])
-    with dep_col1:
-        st.markdown("""
-        ```bash
-        # 1. Deploy directly to Google Cloud Run (Bengaluru Region - asia-south1)
-        gcloud run deploy vyapardost-ai             --source .             --region asia-south1             --allow-unauthenticated             --set-env-vars GEMINI_API_KEY="AIzaSy..."
-
-        # 2. Or Build & Run Production Docker Container
-        docker build -t vyapardost:latest .
-        docker run -p 8080:8501 -e PORT=8501 vyapardost:latest
-        ```
-        """)
-    with dep_col2:
-        st.markdown("""
-        <div style="background:#F0FDF4; border:1px solid #BBF7D0; border-radius:10px; padding:14px; margin-bottom:10px;">
-            <div style="font-weight:700; color:#166534; font-size:0.9rem;">✅ Cloud Health Check</div>
-            <div style="font-size:0.8rem; color:#15803D; margin-top:4px;">
-                • Port: 8501 (Healthy)<br>
-                • Protocol: HTTP/1.1 Uvicorn / Tornado<br>
-                • Database: Cloud Micro-Khata JSON<br>
-                • AI Engine: Google Gemini 2.5 Flash
-            </div>
-        </div>
-        """, unsafe_allow_html=True)
-        
-        config_payload = json.dumps(st.session_state.user_profile, indent=2)
-        st.download_button(
-            "📥 Export Cloud Config (`vyapardost_config.json`)",
-            data=config_payload,
-            file_name="vyapardost_cloud_config.json",
-            mime="application/json",
-            use_container_width=True
-        )
-
-
-# ==============================================================================
+            # ==============================================================================
 # DYNAMIC NAVIGATION DISPATCHER
 # ==============================================================================
 available_tab_defs = [
