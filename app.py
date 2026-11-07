@@ -1112,27 +1112,52 @@ st.markdown(site_css, unsafe_allow_html=True)
 count_up_script = """
 <script>
 (function() {
+    var activeAnimations = new Map();
+
     function runLiveCountUp() {
         try {
             var doc = window.parent.document;
             if (!doc) return;
             var counters = doc.querySelectorAll('.kpi-animated-num');
             counters.forEach(function(el) {
-                if (el.getAttribute('data-animated') === 'true') return;
                 var rawVal = el.getAttribute('data-val') || '0';
+                var currentKpi = el.getAttribute('data-kpi') || '';
                 var target = parseFloat(rawVal);
                 if (isNaN(target)) return;
+                
+                var lastVal = el.getAttribute('data-rendered-val');
+                var lastKpi = el.getAttribute('data-rendered-kpi');
+                
+                // If this element is already displaying the exact target for this KPI, skip
+                if (lastVal === rawVal && lastKpi === currentKpi && el.getAttribute('data-animated') === 'true') {
+                    return;
+                }
+                
+                // Mark current KPI and value immediately so rapid switching starts fresh
+                el.setAttribute('data-rendered-val', rawVal);
+                el.setAttribute('data-rendered-kpi', currentKpi);
+                el.setAttribute('data-animated', 'true');
+                
                 var prefix = el.getAttribute('data-prefix') || '';
                 var suffix = el.getAttribute('data-suffix') || '';
                 var isFloat = rawVal.includes('.');
-                // Under 1 second: 750 milliseconds live datasheet extraction
-                var duration = 750;
+                // 650ms live datasheet extraction (< 1 second)
+                var duration = 650;
                 var start = performance.now();
-                el.setAttribute('data-animated', 'true');
+                
+                // Cancel any previous running animation on this element
+                if (activeAnimations.has(el)) {
+                    window.cancelAnimationFrame(activeAnimations.get(el));
+                }
                 
                 function step(timestamp) {
+                    // If target changed during animation, abort
+                    if (el.getAttribute('data-rendered-val') !== rawVal || el.getAttribute('data-rendered-kpi') !== currentKpi) {
+                        return;
+                    }
                     var elapsed = timestamp - start;
                     var progress = Math.min(elapsed / duration, 1);
+                    // Exponential ease-out live extraction curve
                     var ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
                     var current = target * ease;
                     
@@ -1143,21 +1168,26 @@ count_up_script = """
                     }
                     
                     if (progress < 1) {
-                        window.requestAnimationFrame(step);
+                        var rafId = window.requestAnimationFrame(step);
+                        activeAnimations.set(el, rafId);
                     } else {
                         if (isFloat) {
                             el.innerText = prefix + target.toFixed(1) + suffix;
                         } else {
                             el.innerText = prefix + Math.floor(target).toLocaleString('en-IN') + suffix;
                         }
+                        activeAnimations.delete(el);
                     }
                 }
-                window.requestAnimationFrame(step);
+                var initRaf = window.requestAnimationFrame(step);
+                activeAnimations.set(el, initRaf);
             });
         } catch(e) {}
     }
-    // Continuous observer ensures newly opened logs immediately count up from 0 to target in < 1s
-    setInterval(runLiveCountUp, 100);
+    
+    // High-frequency live watcher (60ms) guarantees instant response when switching tiles
+    setInterval(runLiveCountUp, 60);
+    runLiveCountUp();
 })();
 </script>
 """
@@ -1683,9 +1713,7 @@ Master Liquidity Pulse {active_pulse_badge}
 </div>
 </div>'''
         st.markdown(hero_html, unsafe_allow_html=True)
-        if st.button("Open Pulse Log", key="btn_tile_pulse", use_container_width=True):
-            select_kpi_drilldown("pulse")
-            st.rerun()
+        st.button("📊 Open Liquidity Log" if active_kpi != "pulse" else "✖ Close Log", key="btn_tile_pulse", on_click=select_kpi_drilldown, args=("pulse",), use_container_width=True)
 
     with col_bento_tall:
         border_overdue = "3px solid #EF4444" if active_kpi == "overdue" else "4px solid #EF4444"
@@ -1709,9 +1737,7 @@ Master Liquidity Pulse {active_pulse_badge}
 </div>
 </div>'''
         st.markdown(watchdog_html, unsafe_allow_html=True)
-        if st.button("⚠️ Open Defaulters Roster" if active_kpi != "overdue" else "✖ Close Log", key="btn_tile_overdue", use_container_width=True):
-            select_kpi_drilldown("overdue")
-            st.rerun()
+        st.button("⚠️ Open Defaulters Roster" if active_kpi != "overdue" else "✖ Close Log", key="btn_tile_overdue", on_click=select_kpi_drilldown, args=("overdue",), use_container_width=True)
 
     st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
@@ -1730,9 +1756,7 @@ Cash Collections {'●' if active_kpi == "cash" else ""}
 <div style="font-size:0.72rem; color:#10B981; font-weight:700; margin-top:6px; text-align:right;">{'▲ Close Log' if active_kpi == "cash" else '▼ Open Cash Log'}</div>
 </div>'''
         st.markdown(sq1_html, unsafe_allow_html=True)
-        if st.button("💵 Open Cash Flow Logs" if active_kpi != "cash" else "✖ Close Log", key="btn_tile_cash", use_container_width=True):
-            select_kpi_drilldown("cash")
-            st.rerun()
+        st.button("💵 Open Cash Flow Logs" if active_kpi != "cash" else "✖ Close Log", key="btn_tile_cash", on_click=select_kpi_drilldown, args=("cash",), use_container_width=True)
 
     with col_sq2:
         border_sq2 = "3px solid #EF4444" if active_kpi == "udhaar" else "4px solid #EF4444"
@@ -1746,9 +1770,7 @@ Udhaar Ledger {'●' if active_kpi == "udhaar" else ""}
 <div style="font-size:0.72rem; color:#EF4444; font-weight:700; margin-top:6px; text-align:right;">{'▲ Close Log' if active_kpi == "udhaar" else '▼ Open Udhaar Roster'}</div>
 </div>'''
         st.markdown(sq2_html, unsafe_allow_html=True)
-        if st.button("📒 Open Udhaar Roster" if active_kpi != "udhaar" else "✖ Close Log", key="btn_tile_udhaar", use_container_width=True):
-            select_kpi_drilldown("udhaar")
-            st.rerun()
+        st.button("📒 Open Udhaar Roster" if active_kpi != "udhaar" else "✖ Close Log", key="btn_tile_udhaar", on_click=select_kpi_drilldown, args=("udhaar",), use_container_width=True)
 
     with col_sq3:
         border_sq3 = "3px solid #8B5CF6" if active_kpi == "advance" else "4px solid #8B5CF6"
@@ -1762,9 +1784,7 @@ Customer Advances {'●' if active_kpi == "advance" else ""}
 <div style="font-size:0.72rem; color:#A855F7; font-weight:700; margin-top:6px; text-align:right;">{'▲ Close Log' if active_kpi == "advance" else '▼ Open Directory'}</div>
 </div>'''
         st.markdown(sq3_html, unsafe_allow_html=True)
-        if st.button("🟣 Open Customer Directory" if active_kpi != "advance" else "✖ Close Log", key="btn_tile_advance", use_container_width=True):
-            select_kpi_drilldown("advance")
-            st.rerun()
+        st.button("🟣 Open Customer Directory" if active_kpi != "advance" else "✖ Close Log", key="btn_tile_advance", on_click=select_kpi_drilldown, args=("advance",), use_container_width=True)
 
     with col_sq4:
         border_sq4 = "3px solid #38BDF8" if active_kpi == "accuracy" else "4px solid #38BDF8"
@@ -1778,42 +1798,30 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
 <div style="font-size:0.72rem; color:#38BDF8; font-weight:700; margin-top:6px; text-align:right;">{'▲ Close Log' if active_kpi == "accuracy" else '▼ Open AI Audit'}</div>
 </div>'''
         st.markdown(sq4_html, unsafe_allow_html=True)
-        if st.button("⭐ Open AI Accuracy Audit" if active_kpi != "accuracy" else "✖ Close Log", key="btn_tile_accuracy", use_container_width=True):
-            select_kpi_drilldown("accuracy")
-            st.rerun()
+        st.button("⭐ Open AI Accuracy Audit" if active_kpi != "accuracy" else "✖ Close Log", key="btn_tile_accuracy", on_click=select_kpi_drilldown, args=("accuracy",), use_container_width=True)
 
-    # JavaScript Delegator: Makes the entire card tile clickable and handles auto-scroll
+    # High-Performance Card Delegator & Smooth Viewport Alignment
     kpi_click_script = '''<script>
     (function() {
-        function setupKpiTiles() {
-            var doc = window.parent.document;
-            if (!doc) return;
-            var tiles = doc.querySelectorAll('.kpi-card-tile');
-            tiles.forEach(function(tile) {
-                if (tile.getAttribute('data-click-bound') === 'true') return;
-                tile.setAttribute('data-click-bound', 'true');
-                tile.style.cursor = 'pointer';
-                tile.addEventListener('click', function(e) {
-                    if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
-                    var kpi = tile.getAttribute('data-kpi');
-                    if (!kpi) return;
-                    var col = tile.closest('[data-testid="column"], [data-testid="stColumn"], [class*="stColumn"]');
-                    if (col) {
-                        var btn = col.querySelector('button');
-                        if (btn) {
-                            btn.click();
-                            return;
-                        }
+        var doc = window.parent.document;
+        if (!doc) return;
+        
+        // Single document-level click delegator for instant response
+        if (!doc._kpiTileClickBound) {
+            doc._kpiTileClickBound = true;
+            doc.addEventListener('click', function(e) {
+                var tile = e.target.closest('.kpi-card-tile');
+                if (!tile) return;
+                if (e.target.tagName === 'BUTTON' || e.target.tagName === 'A') return;
+                var col = tile.closest('[data-testid="column"], [data-testid="stColumn"], [class*="stColumn"]');
+                if (col) {
+                    var btn = col.querySelector('button');
+                    if (btn) {
+                        btn.click();
                     }
-                    var allBtns = Array.from(doc.querySelectorAll('button'));
-                    var match = allBtns.find(function(b) {
-                        return (b.getAttribute('key') || '').includes(kpi) || (b.innerText || '').toLowerCase().includes(kpi);
-                    });
-                    if (match) match.click();
-                });
-            });
+                }
+            }, true);
         }
-        setInterval(setupKpiTiles, 300);
     })();
     </script>'''
     components.html(kpi_click_script, height=0, width=0)
@@ -1823,86 +1831,14 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
     if active_kpi:
         st.markdown("<div style='height: 14px;'></div>", unsafe_allow_html=True)
 
-        # Live Data Extraction Count-Up Animation (< 1 second)
-        extractor_js = """<script>
-        (function() {
-            function triggerDrilldownCountUp() {
-                try {
-                    var doc = window.parent.document;
-                    if (!doc) return;
-                    var counters = doc.querySelectorAll('.kpi-animated-num');
-                    counters.forEach(function(el) {
-                        var rawVal = el.getAttribute('data-val') || '0';
-                        var target = parseFloat(rawVal);
-                        if (isNaN(target)) return;
-                        var prefix = el.getAttribute('data-prefix') || '';
-                        var suffix = el.getAttribute('data-suffix') || '';
-                        var isFloat = rawVal.includes('.');
-                        var duration = 750;
-                        var start = performance.now();
-                        el.setAttribute('data-animated', 'true');
-                        
-                        function step(timestamp) {
-                            var elapsed = timestamp - start;
-                            var progress = Math.min(elapsed / duration, 1);
-                            var ease = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-                            var current = target * ease;
-                            if (isFloat) {
-                                el.innerText = prefix + current.toFixed(1) + suffix;
-                            } else {
-                                el.innerText = prefix + Math.floor(current).toLocaleString('en-IN') + suffix;
-                            }
-                            if (progress < 1) {
-                                window.requestAnimationFrame(step);
-                            } else {
-                                el.innerText = prefix + (isFloat ? target.toFixed(1) : Math.floor(target).toLocaleString('en-IN')) + suffix;
-                            }
-                        }
-                        window.requestAnimationFrame(step);
-                    });
-                } catch(e) {}
-            }
-            triggerDrilldownCountUp();
-            setTimeout(triggerDrilldownCountUp, 50);
-            setTimeout(triggerDrilldownCountUp, 200);
-            setTimeout(function() {
-                try {
-                    var doc = window.parent.document;
-                    if (!doc) return;
-                    var counters = doc.querySelectorAll('.kpi-animated-num');
-                    counters.forEach(function(el) {
-                        var val = el.innerText.trim();
-                        if (val === '0' || val === '₹0' || val === '0.0%' || val === '0 Customers' || val === '0 Bills' || val === '0 Profiles') {
-                            var rawVal = el.getAttribute('data-val') || '0';
-                            var target = parseFloat(rawVal);
-                            var prefix = el.getAttribute('data-prefix') || '';
-                            var suffix = el.getAttribute('data-suffix') || '';
-                            var isFloat = rawVal.includes('.');
-                            el.innerText = prefix + (isFloat ? target.toFixed(1) : Math.floor(target).toLocaleString('en-IN')) + suffix;
-                        }
-                    });
-                } catch(e) {}
-            }, 850);
-        })();
-        </script>"""
-        components.html(extractor_js, height=0, width=0)
+        
 
-        # Smooth auto-scroll to drilldown section
-        components.html('''<script>
-        setTimeout(function() {
-            var el = window.parent.document.getElementById('kpi_drilldown_section');
-            if (el) el.scrollIntoView({behavior: 'smooth', block: 'start'});
-        }, 120);
-        </script>''', height=0, width=0)
+        
         with st.container(border=True):
             head_col1, head_col2 = st.columns([3, 1])
             with head_col2:
                 st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
-                if st.button("✖ Close Log View", key="btn_close_kpi_drilldown", use_container_width=True):
-                    st.session_state.kpi_drilldown_view = None
-                    try: st.query_params.pop("kpi", None)
-                    except Exception: pass
-                    st.rerun()
+                st.button("✖ Close Log View", key="btn_close_kpi_drilldown", on_click=select_kpi_drilldown, args=(active_kpi,), use_container_width=True)
 
             if active_kpi == "pulse":
                 with head_col1:
@@ -1914,25 +1850,25 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
                 with c_s1:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">TOTAL BILLED</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#38BDF8;"><span class="kpi-animated-num" data-val="{total_billed}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#38BDF8;"><span class="kpi-animated-num" data-kpi="pulse" data-val="{total_billed}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:var(--text-muted);">{len(df_all):,} Transactions</div>
 </div>''', unsafe_allow_html=True)
                 with c_s2:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">SETTLED INFLOW</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#10B981;"><span class="kpi-animated-num" data-val="{total_cleared}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#10B981;"><span class="kpi-animated-num" data-kpi="pulse" data-val="{total_cleared}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:#10B981; font-weight:700;">{recovery_pct}% Recovered</div>
 </div>''', unsafe_allow_html=True)
                 with c_s3:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">PENDING UDHAAR</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-val="{total_pending}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-kpi="pulse" data-val="{total_pending}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:#EF4444; font-weight:700;">Active Debt</div>
 </div>''', unsafe_allow_html=True)
                 with c_s4:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">ADVANCE SURPLUS</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#A855F7;"><span class="kpi-animated-num" data-val="{total_advance}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#A855F7;"><span class="kpi-animated-num" data-kpi="pulse" data-val="{total_advance}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:#A855F7; font-weight:700;">Prepaid Credit</div>
 </div>''', unsafe_allow_html=True)
 
@@ -1962,13 +1898,13 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
                 with c_s1:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">OVERDUE (>7 DAYS)</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-val="{overdue_7d_count}" data-suffix=" Bills">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-kpi="overdue" data-val="{overdue_7d_count}" data-suffix=" Bills">0</span></div>
 <div style="font-size:0.72rem; color:#EF4444; font-weight:700;">Action Required</div>
 </div>''', unsafe_allow_html=True)
                 with c_s2:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">LOCKED CAPITAL</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-val="{overdue_7d_sum}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-kpi="overdue" data-val="{overdue_7d_sum}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:var(--text-muted);">Unsettled Balance</div>
 </div>''', unsafe_allow_html=True)
                 with c_s3:
@@ -1981,7 +1917,7 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
                 with c_s4:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">AVG OVERDUE SIZE</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-val="{avg_overdue}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-kpi="overdue" data-val="{avg_overdue}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:var(--text-muted);">Per Debtor</div>
 </div>''', unsafe_allow_html=True)
 
@@ -2009,25 +1945,25 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
                 with c_s1:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">TOTAL SETTLED CASH & UPI</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#10B981;"><span class="kpi-animated-num" data-val="{total_cleared}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#10B981;"><span class="kpi-animated-num" data-kpi="cash" data-val="{total_cleared}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:#10B981; font-weight:700;">Banked Capital</div>
 </div>''', unsafe_allow_html=True)
                 with c_s2:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">DIGITAL UPI PAYMENTS</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#38BDF8;"><span class="kpi-animated-num" data-val="{upi_sum}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#38BDF8;"><span class="kpi-animated-num" data-kpi="cash" data-val="{upi_sum}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:#38BDF8; font-weight:700;">PhonePe / GPay / Paytm</div>
 </div>''', unsafe_allow_html=True)
                 with c_s3:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">COUNTER CASH IN HAND</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#F59E0B;"><span class="kpi-animated-num" data-val="{cash_sum}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#F59E0B;"><span class="kpi-animated-num" data-kpi="cash" data-val="{cash_sum}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:var(--text-muted);">Drawer Cash</div>
 </div>''', unsafe_allow_html=True)
                 with c_s4:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">FULLY SETTLED BILLS</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-val="{settled_count}" data-suffix=" Bills">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-kpi="cash" data-val="{settled_count}" data-suffix=" Bills">0</span></div>
 <div style="font-size:0.72rem; color:#10B981; font-weight:700;">Zero Balance</div>
 </div>''', unsafe_allow_html=True)
 
@@ -2055,19 +1991,19 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
                 with c_s1:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">TOTAL UDHAAR BALANCE</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-val="{total_pending}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-kpi="udhaar" data-val="{total_pending}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:#EF4444; font-weight:700;">{overdue_count} Bills Pending</div>
 </div>''', unsafe_allow_html=True)
                 with c_s2:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">DISTINCT BUYERS OWING</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-val="{unique_debtors}" data-suffix=" Customers">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#EF4444;"><span class="kpi-animated-num" data-kpi="udhaar" data-val="{unique_debtors}" data-suffix=" Customers">0</span></div>
 <div style="font-size:0.72rem; color:var(--text-muted);">Debtor Entities</div>
 </div>''', unsafe_allow_html=True)
                 with c_s3:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">AVERAGE DEBT SIZE</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-val="{avg_debt}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-kpi="udhaar" data-val="{avg_debt}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:var(--text-muted);">Per Transaction</div>
 </div>''', unsafe_allow_html=True)
                 with c_s4:
@@ -2107,13 +2043,13 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
                 with c_s1:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">REGISTERED CUSTOMERS</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#A855F7;"><span class="kpi-animated-num" data-val="{unique_customers}" data-suffix=" Profiles">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#A855F7;"><span class="kpi-animated-num" data-kpi="advance" data-val="{unique_customers}" data-suffix=" Profiles">0</span></div>
 <div style="font-size:0.72rem; color:var(--text-muted);">Unique Buyers</div>
 </div>''', unsafe_allow_html=True)
                 with c_s2:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">ADVANCE SURPLUS HELD</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#10B981;"><span class="kpi-animated-num" data-val="{total_advance}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#10B981;"><span class="kpi-animated-num" data-kpi="advance" data-val="{total_advance}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:#10B981; font-weight:700;">{advance_accounts} Prepaid Accounts</div>
 </div>''', unsafe_allow_html=True)
                 with c_s3:
@@ -2126,7 +2062,7 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
                 with c_s4:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">AVG LIFETIME SPEND</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-val="{avg_spend}" data-prefix="₹">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-kpi="advance" data-val="{avg_spend}" data-prefix="₹">0</span></div>
 <div style="font-size:0.72rem; color:var(--text-muted);">Per Customer</div>
 </div>''', unsafe_allow_html=True)
 
@@ -2145,19 +2081,19 @@ Gemini Accuracy {'●' if active_kpi == "accuracy" else ""}
                 with c_s1:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">VISION OCR ACCURACY</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#38BDF8;"><span class="kpi-animated-num" data-val="98.7" data-suffix="%">0.0%</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#38BDF8;"><span class="kpi-animated-num" data-kpi="accuracy" data-val="98.7" data-suffix="%">0.0%</span></div>
 <div style="font-size:0.72rem; color:#10B981; font-weight:700;">+1.2% vs Gemini 1.5</div>
 </div>''', unsafe_allow_html=True)
                 with c_s2:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">VERNACULAR SPEECH</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#10B981;"><span class="kpi-animated-num" data-val="99.4" data-suffix="%">0.0%</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:#10B981;"><span class="kpi-animated-num" data-kpi="accuracy" data-val="99.4" data-suffix="%">0.0%</span></div>
 <div style="font-size:0.72rem; color:#10B981; font-weight:700;">Code-Mixed Kannada/Hindi</div>
 </div>''', unsafe_allow_html=True)
                 with c_s3:
                     st.markdown(f'''<div class="liquid-glass" style="padding:14px; text-align:center;">
 <div style="font-size:0.75rem; color:var(--text-secondary); font-weight:700;">AUDITED TRANSACTIONS</div>
-<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-val="{len(df_all)}" data-suffix=" Bills">0</span></div>
+<div style="font-size:1.6rem; font-weight:800; font-family:'Sreda', serif; color:var(--text-primary);"><span class="kpi-animated-num" data-kpi="accuracy" data-val="{len(df_all)}" data-suffix=" Bills">0</span></div>
 <div style="font-size:0.72rem; color:var(--text-muted);">100% Ingested</div>
 </div>''', unsafe_allow_html=True)
                 with c_s4:
