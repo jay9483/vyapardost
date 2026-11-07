@@ -15,6 +15,15 @@ import streamlit as st
 import streamlit.components.v1 as components
 from streamlit_mic_recorder import speech_to_text
 
+# Universal CommonMark indentation guard: prevents indented HTML lines from rendering as <pre><code>
+_orig_st_markdown = st.markdown
+def _safe_st_markdown(body, *args, **kwargs):
+    if isinstance(body, str) and kwargs.get('unsafe_allow_html', False):
+        lines = [line.strip() for line in body.split('\n')]
+        body = '\n'.join(lines)
+    return _orig_st_markdown(body, *args, **kwargs)
+st.markdown = _safe_st_markdown
+
 # Setup page config with modern wide viewport
 st.set_page_config(
     page_title="VyaparDost AI • Google Build with AI Bengaluru",
@@ -789,6 +798,211 @@ site_css = f"""<style>
         width: 100% !important;
     }}
 
+    /* ==========================================================================
+       CINEMATIC LIFT SERIES ANIMATIONS & LUXURY STYLING
+       ========================================================================== */
+    .bg-glow {{
+        position: fixed !important;
+        top: 8% !important;
+        left: 50% !important;
+        transform: translateX(-50%) !important;
+        width: 85vw !important;
+        height: 75vw !important;
+        background: radial-gradient(circle at 35% 30%, rgba(56, 189, 248, 0.08) 0%, transparent 55%),
+                    radial-gradient(circle at 65% 65%, rgba(245, 158, 11, 0.05) 0%, transparent 55%) !important;
+        z-index: 0 !important;
+        pointer-events: none !important;
+        animation: ambientDrift 20s ease-in-out infinite alternate !important;
+    }}
+    @keyframes ambientDrift {{
+        0% {{ transform: translateX(-50%) translateY(0) scale(1); }}
+        50% {{ transform: translateX(-48%) translateY(-20px) scale(1.06); }}
+        100% {{ transform: translateX(-52%) translateY(20px) scale(0.96); }}
+    }}
+
+    .lift-nav-bar {{
+        border: 1px solid var(--hairline-border) !important;
+        background: var(--card-bg) !important;
+        backdrop-filter: blur(var(--glass-blur)) !important;
+        -webkit-backdrop-filter: blur(var(--glass-blur)) !important;
+        border-radius: var(--radius-inner) !important;
+        padding: 14px 24px !important;
+        margin-bottom: 24px !important;
+        display: flex !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        flex-wrap: wrap !important;
+        gap: 16px !important;
+        box-shadow: var(--shadow-elevation) !important;
+        position: relative !important;
+        z-index: 20 !important;
+    }}
+    .cloud-active-pill {{
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        background: {'rgba(16,185,129,0.18)' if is_dark else '#DCFCE7'} !important;
+        color: {'#34D399' if is_dark else '#15803D'} !important;
+        font-weight: 700 !important;
+        padding: 6px 16px !important;
+        border-radius: 100px !important;
+        border: 1px solid {'rgba(16,185,129,0.35)' if is_dark else '#BBF7D0'} !important;
+        letter-spacing: 0.12em !important;
+        font-size: 0.74rem !important;
+        box-shadow: 0 0 12px {'rgba(16,185,129,0.2)' if is_dark else 'rgba(16,185,129,0.15)'} !important;
+    }}
+    .radar-dot {{
+        width: 8px !important;
+        height: 8px !important;
+        border-radius: 50% !important;
+        background: {'#34D399' if is_dark else '#16A34A'} !important;
+        position: relative !important;
+        display: inline-block !important;
+    }}
+    .radar-dot::after {{
+        content: '' !important;
+        position: absolute !important;
+        top: -3px !important;
+        left: -3px !important;
+        right: -3px !important;
+        bottom: -3px !important;
+        border-radius: 50% !important;
+        border: 2px solid {'#34D399' if is_dark else '#16A34A'} !important;
+        animation: radarPingRing 2.2s cubic-bezier(0, 0, 0.2, 1) infinite !important;
+    }}
+    @keyframes radarPingRing {{
+        0% {{ transform: scale(0.7); opacity: 1; }}
+        70% {{ transform: scale(2.4); opacity: 0; }}
+        100% {{ transform: scale(2.4); opacity: 0; }}
+    }}
+
+    .hero-cinematic-container {{
+        position: relative !important;
+        text-align: center !important;
+        padding: 44px 20px 32px 20px !important;
+        margin-bottom: 24px !important;
+        border-radius: var(--radius-card) !important;
+        background: radial-gradient(ellipse at center, rgba(255,255,255,0.03) 0%, transparent 72%) !important;
+        z-index: 10 !important;
+    }}
+    .hero-crest-wrap {{
+        position: relative !important;
+        display: inline-block !important;
+        margin-bottom: 22px !important;
+    }}
+    .hero-crest-aura {{
+        position: absolute !important;
+        top: 50% !important;
+        left: 50% !important;
+        width: 180px !important;
+        height: 180px !important;
+        transform: translate(-50%, -50%) !important;
+        background: radial-gradient(circle, rgba(56, 189, 248, 0.25) 0%, rgba(245, 158, 11, 0.15) 50%, transparent 72%) !important;
+        filter: blur(32px) !important;
+        border-radius: 50% !important;
+        pointer-events: none !important;
+        animation: auraBreathe 5s ease-in-out infinite alternate !important;
+        z-index: 0 !important;
+    }}
+    @keyframes auraBreathe {{
+        0% {{ transform: translate(-50%, -50%) scale(0.9); opacity: 0.5; }}
+        100% {{ transform: translate(-50%, -50%) scale(1.22); opacity: 0.95; }}
+    }}
+    .hero-crest-svg {{
+        position: relative !important;
+        z-index: 1 !important;
+        animation: cinematicLevitate 6s ease-in-out infinite !important;
+        filter: drop-shadow(0 15px 30px rgba(0,0,0,0.4)) drop-shadow(0 0 20px rgba(56, 189, 248, 0.35)) !important;
+    }}
+    @keyframes cinematicLevitate {{
+        0%, 100% {{
+            transform: translateY(0px) rotate(0deg) scale(1);
+        }}
+        50% {{
+            transform: translateY(-8px) rotate(1.2deg) scale(1.02);
+        }}
+    }}
+
+    .hero-eyebrow-pill {{
+        display: inline-flex !important;
+        align-items: center !important;
+        gap: 8px !important;
+        padding: 6px 18px !important;
+        border-radius: 100px !important;
+        background: {'rgba(255,255,255,0.05)' if is_dark else 'rgba(0,0,0,0.04)'} !important;
+        border: 1px solid {'rgba(255,255,255,0.14)' if is_dark else 'rgba(0,0,0,0.08)'} !important;
+        backdrop-filter: blur(12px) !important;
+        font-size: 0.74rem !important;
+        font-weight: 700 !important;
+        letter-spacing: 0.3em !important;
+        text-transform: uppercase !important;
+        color: var(--text-secondary) !important;
+        margin-bottom: 18px !important;
+        box-shadow: 0 4px 16px rgba(0,0,0,0.12) !important;
+    }}
+    .hero-eyebrow-dot {{
+        width: 6px !important;
+        height: 6px !important;
+        border-radius: 50% !important;
+        background: #38BDF8 !important;
+        box-shadow: 0 0 8px #38BDF8 !important;
+        display: inline-block !important;
+    }}
+    .hero-cinematic-title {{
+        font-size: clamp(2.2rem, 5.2vw, 3.8rem) !important;
+        font-weight: 200 !important;
+        letter-spacing: 0.06em !important;
+        line-height: 1.15 !important;
+        margin: 0 0 14px 0 !important;
+        color: var(--text-primary) !important;
+        text-transform: uppercase !important;
+    }}
+    .hero-gradient-text {{
+        font-weight: 900 !important;
+        letter-spacing: 0.12em !important;
+        background: {'linear-gradient(135deg, #FFFFFF 0%, #E2E8F0 35%, #38BDF8 75%, #F59E0B 100%)' if is_dark else 'linear-gradient(135deg, #0F172A 0%, #1E293B 35%, #0284C7 75%, #D97706 100%)'} !important;
+        -webkit-background-clip: text !important;
+        -webkit-text-fill-color: transparent !important;
+        background-size: 200% auto !important;
+        animation: textShimmer 8s ease infinite !important;
+    }}
+    @keyframes textShimmer {{
+        0% {{ background-position: 0% 50%; }}
+        50% {{ background-position: 100% 50%; }}
+        100% {{ background-position: 0% 50%; }}
+    }}
+    .hero-cinematic-subtitle {{
+        font-size: 0.92rem !important;
+        color: var(--text-secondary) !important;
+        max-width: 760px !important;
+        margin: 0 auto 12px auto !important;
+        line-height: 1.65 !important;
+        letter-spacing: 0.02em !important;
+    }}
+
+    .kpi-card-tile {{
+        transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.4s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.4s ease !important;
+        position: relative !important;
+        overflow: hidden !important;
+    }}
+    .kpi-card-tile:hover {{
+        transform: translateY(-5px) scale(1.008) !important;
+        box-shadow: 0 26px 52px -14px rgba(0, 0, 0, 0.38), 0 0 26px -4px rgba(56, 189, 248, 0.3) !important;
+        border-color: rgba(56, 189, 248, 0.45) !important;
+    }}
+
+    @media (prefers-reduced-motion: reduce) {{
+        .hero-crest-aura,
+        .hero-crest-svg,
+        .hero-gradient-text,
+        .bg-glow,
+        .kpi-card-tile,
+        .radar-dot::after {{
+            animation: none !important;
+            transition: none !important;
+        }}
+    }}
+
 </style>
 """
 st.markdown(site_css, unsafe_allow_html=True)
@@ -1147,99 +1361,90 @@ if "dispatched_nudges" not in st.session_state:
 if "user_profile" not in st.session_state:
     st.session_state.user_profile = get_initial_profile()
 
-# ----------------- STICKY LIQUID GLASS APP HEADER -----------------
-st.markdown(f"""
-<div class="bg-glow"></div>
-
-<!-- LIFT SERIES FIXED LUXURY NAVIGATION BAR -->
+# ----------------- STICKY LIQUID GLASS APP HEADER & CINEMATIC HERO -----------------
+hero_and_nav_html = f"""<div class="bg-glow"></div>
 <div class="lift-nav-bar">
-    <div style="display:flex; align-items:center; gap:14px;">
-        <!-- Isometric Geometric Metallic Crest (LIFT SERIES Style) -->
-        <svg width="32" height="32" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px rgba(255,255,255,0.25)); flex-shrink:0;">
-            <defs>
-                <linearGradient id="liftNavTop" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#FFFFFF" />
-                    <stop offset="100%" stop-color="#94A3B8" />
-                </linearGradient>
-                <linearGradient id="liftNavLeft" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#475569" />
-                    <stop offset="100%" stop-color="#0F172A" />
-                </linearGradient>
-                <linearGradient id="liftNavRight" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#F59E0B" />
-                    <stop offset="100%" stop-color="#B45309" />
-                </linearGradient>
-            </defs>
-            <path fill="url(#liftNavTop)" d="M50,10 L85,30 L50,50 L15,30 Z" />
-            <path fill="url(#liftNavLeft)" d="M50,50 L15,30 L15,70 L50,90 Z" />
-            <path fill="url(#liftNavRight)" d="M50,50 L85,30 L85,70 L50,90 Z" />
-        </svg>
-        <div style="display:flex; flex-direction:column;">
-            <div style="display:flex; align-items:center; gap:8px;">
-                <span style="font-size:1.05rem; font-weight:800; letter-spacing:0.22em; color:var(--text-primary); text-transform:uppercase;">
-                    VYAPARDOST AI
-                </span>
-                <span style="font-size:0.68rem; background:{accent_hex}; color:{'#0F172A' if is_dark else '#FFFFFF'}; padding:2px 8px; border-radius:100px; font-weight:800; text-transform:uppercase; letter-spacing:0.06em;">
-                    2.0 Pro
-                </span>
-            </div>
-            <span style="font-size:0.75rem; color:var(--text-secondary); letter-spacing:0.08em; text-transform:uppercase; font-weight:600;">
-                {st.session_state.user_profile.get('store_name', 'Sri Manjunatha Provision Store')}
-            </span>
-        </div>
-    </div>
-    
-    <div style="display:flex; align-items:center; gap:16px; font-size:0.76rem; letter-spacing:0.16em; text-transform:uppercase; flex-wrap:wrap;">
-        <span style="background:{'rgba(16,185,129,0.18)' if is_dark else '#DCFCE7'}; color:{'#34D399' if is_dark else '#15803D'}; font-weight:700; padding:5px 14px; border-radius:100px; border:1px solid {'rgba(16,185,129,0.3)' if is_dark else '#BBF7D0'};">
-            🟢 CLOUD ACTIVE • 1,561 RECORDS
-        </span>
-        <span style="color:var(--text-secondary); font-weight:600;">
-            PROPRIETOR: <b style="color:var(--text-primary);">{st.session_state.user_profile.get('user_name', 'J PRITHVI')}</b> ({st.session_state.user_profile.get('upi_id', 'prithvi.j@ibl')})
-        </span>
-    </div>
+<div style="display:flex; align-items:center; gap:14px;">
+<svg width="34" height="34" viewBox="0 0 100 100" style="filter: drop-shadow(0 0 10px rgba(255,255,255,0.25)); flex-shrink:0;">
+<defs>
+<linearGradient id="liftNavTop" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#FFFFFF" />
+<stop offset="100%" stop-color="#94A3B8" />
+</linearGradient>
+<linearGradient id="liftNavLeft" x1="0%" y1="100%" x2="100%" y2="0%">
+<stop offset="0%" stop-color="#475569" />
+<stop offset="100%" stop-color="#0F172A" />
+</linearGradient>
+<linearGradient id="liftNavRight" x1="0%" y1="0%" x2="0%" y2="100%">
+<stop offset="0%" stop-color="#F59E0B" />
+<stop offset="100%" stop-color="#B45309" />
+</linearGradient>
+</defs>
+<path fill="url(#liftNavTop)" d="M50,10 L85,30 L50,50 L15,30 Z" />
+<path fill="url(#liftNavLeft)" d="M50,50 L15,30 L15,70 L50,90 Z" />
+<path fill="url(#liftNavRight)" d="M50,50 L85,30 L85,70 L50,90 Z" />
+</svg>
+<div style="display:flex; flex-direction:column;">
+<div style="display:flex; align-items:center; gap:8px;">
+<span style="font-size:1.05rem; font-weight:800; letter-spacing:0.22em; color:var(--text-primary); text-transform:uppercase;">VYAPARDOST AI</span>
+<span style="font-size:0.68rem; background:{accent_hex}; color:{'#0F172A' if is_dark else '#FFFFFF'}; padding:2px 10px; border-radius:100px; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; box-shadow:0 0 10px rgba(56,189,248,0.35);">2.0 PRO</span>
 </div>
-
-<!-- LIFT SERIES CINEMATIC HERO SHOWCASE -->
-<div style="position:relative; text-align:center; padding: 42px 16px 28px 16px; margin-bottom: 24px; border-radius:var(--radius-card); background:radial-gradient(ellipse at center, rgba(255,255,255,0.03) 0%, transparent 70%);">
-    <div style="margin-bottom: 20px; display:inline-block; filter: drop-shadow(0 0 32px rgba(255,255,255,0.22));">
-        <svg width="84" height="96" viewBox="0 0 100 100">
-            <defs>
-                <linearGradient id="heroCrestTop" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#FFFFFF" />
-                    <stop offset="100%" stop-color="#94A3B8" />
-                </linearGradient>
-                <linearGradient id="heroCrestLeft" x1="0%" y1="100%" x2="100%" y2="0%">
-                    <stop offset="0%" stop-color="#475569" />
-                    <stop offset="100%" stop-color="#0F172A" />
-                </linearGradient>
-                <linearGradient id="heroCrestRight" x1="0%" y1="0%" x2="0%" y2="100%">
-                    <stop offset="0%" stop-color="#F59E0B" />
-                    <stop offset="100%" stop-color="#B45309" />
-                </linearGradient>
-                <linearGradient id="heroCoreRupee" x1="0%" y1="0%" x2="100%" y2="100%">
-                    <stop offset="0%" stop-color="#38BDF8" />
-                    <stop offset="50%" stop-color="#10B981" />
-                    <stop offset="100%" stop-color="#F59E0B" />
-                </linearGradient>
-            </defs>
-            <path fill="url(#heroCrestTop)" d="M50,10 L85,30 L50,50 L15,30 Z" />
-            <path fill="url(#heroCrestLeft)" d="M50,50 L15,30 L15,70 L50,90 Z" />
-            <path fill="url(#heroCrestRight)" d="M50,50 L85,30 L85,70 L50,90 Z" />
-            <path fill="none" stroke="url(#heroCoreRupee)" stroke-width="2.5" stroke-linecap="round" d="M42 42 H58 M42 49 H56 M42 42 C51 42 53 55 43 55 L57 68" />
-        </svg>
-    </div>
-    
-    <p style="font-size:0.75rem; letter-spacing:0.34em; text-transform:uppercase; color:var(--text-secondary); margin-bottom:12px; font-weight:700;">
-        THE NEW STANDARD • BENGALURU KIRANA INTELLIGENCE
-    </p>
-    <h1 style="font-size:clamp(2.3rem, 5.2vw, 3.8rem); font-weight:200; letter-spacing:0.06em; line-height:1.15; margin:0 0 14px 0; color:var(--text-primary); text-transform:uppercase;">
-        ELEVATE YOUR <br/><span style="font-weight:800; letter-spacing:0.12em;">KIRANA OPERATING SYSTEM</span>
-    </h1>
-    <p style="font-size:0.92rem; color:var(--text-secondary); max-width:720px; margin:0 auto 12px auto; line-height:1.65; letter-spacing:0.02em;">
-        व्यापार दोस्त • ವ್ಯಾಪಾರ ದೋಸ್ತ್ • Multimodal Gemini Vision OCR • Vernacular Voice Khata • Autonomous Cash Flow Doctor • 1,561 Master Transactions
-    </p>
+<span style="font-size:0.75rem; color:var(--text-secondary); letter-spacing:0.08em; text-transform:uppercase; font-weight:600;">{st.session_state.user_profile.get('store_name', 'Sri Manjunatha Provision Store')}</span>
 </div>
-""", unsafe_allow_html=True)
+</div>
+<div style="display:flex; align-items:center; gap:16px; font-size:0.76rem; letter-spacing:0.16em; text-transform:uppercase; flex-wrap:wrap;">
+<span class="cloud-active-pill">
+<span class="radar-dot"></span>
+CLOUD ACTIVE • 1,561 RECORDS
+</span>
+<span style="color:var(--text-secondary); font-weight:600;">
+PROPRIETOR: <b style="color:var(--text-primary);">{st.session_state.user_profile.get('user_name', 'J PRITHVI')}</b> ({st.session_state.user_profile.get('upi_id', 'prithvi.j@ibl')})
+</span>
+</div>
+</div>
+<div class="hero-cinematic-container">
+<div class="hero-crest-wrap">
+<div class="hero-crest-aura"></div>
+<svg class="hero-crest-svg" width="92" height="106" viewBox="0 0 100 100">
+<defs>
+<linearGradient id="heroCrestTop" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#FFFFFF" />
+<stop offset="50%" stop-color="#F1F5F9" />
+<stop offset="100%" stop-color="#94A3B8" />
+</linearGradient>
+<linearGradient id="heroCrestLeft" x1="0%" y1="100%" x2="100%" y2="0%">
+<stop offset="0%" stop-color="#334155" />
+<stop offset="100%" stop-color="#0F172A" />
+</linearGradient>
+<linearGradient id="heroCrestRight" x1="0%" y1="0%" x2="0%" y2="100%">
+<stop offset="0%" stop-color="#F59E0B" />
+<stop offset="100%" stop-color="#B45309" />
+</linearGradient>
+<linearGradient id="heroCoreRupee" x1="0%" y1="0%" x2="100%" y2="100%">
+<stop offset="0%" stop-color="#38BDF8" />
+<stop offset="50%" stop-color="#10B981" />
+<stop offset="100%" stop-color="#F59E0B" />
+</linearGradient>
+</defs>
+<path fill="url(#heroCrestTop)" d="M50,10 L85,30 L50,50 L15,30 Z" />
+<path fill="url(#heroCrestLeft)" d="M50,50 L15,30 L15,70 L50,90 Z" />
+<path fill="url(#heroCrestRight)" d="M50,50 L85,30 L85,70 L50,90 Z" />
+<path fill="none" stroke="url(#heroCoreRupee)" stroke-width="2.6" stroke-linecap="round" d="M42 42 H58 M42 49 H56 M42 42 C51 42 53 55 43 55 L57 68" />
+</svg>
+</div>
+<div class="hero-eyebrow-pill">
+<span class="hero-eyebrow-dot"></span>
+THE NEW STANDARD • BENGALURU KIRANA INTELLIGENCE
+</div>
+<h1 class="hero-cinematic-title">
+ELEVATE YOUR <br/>
+<span class="hero-gradient-text">KIRANA OPERATING SYSTEM</span>
+</h1>
+<p class="hero-cinematic-subtitle">
+व्यापार दोस्त • ವ್ಯಾಪಾರ ದೋಸ್ತ್ • Multimodal Gemini Vision OCR • Vernacular Voice Khata • Autonomous Cash Flow Doctor • 1,561 Master Transactions
+</p>
+</div>"""
+st.markdown(hero_and_nav_html, unsafe_allow_html=True)
 
 # Navigation Controls: Theme Toggle (Dark/Light), Onboarding Tour / Replay Intro, Profile Modal
 col_ctrl1, col_ctrl2, col_ctrl3 = st.columns([1.6, 1.2, 1.2])
