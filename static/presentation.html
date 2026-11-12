@@ -10,8 +10,8 @@
   <style>
     :root {
       --bg-void: #060911;
-      --surface-glass: rgba(15, 23, 42, 0.78);
-      --surface-elevated: rgba(30, 41, 59, 0.82);
+      --surface-glass: rgba(15, 23, 42, 0.82);
+      --surface-elevated: rgba(30, 41, 59, 0.88);
       --border-subtle: rgba(255, 255, 255, 0.12);
       --border-accent: rgba(56, 189, 248, 0.35);
       --cyan: #38BDF8;
@@ -23,11 +23,11 @@
       --text-pure: #FFFFFF;
       --text-muted: #94A3B8;
       --text-soft: #CBD5E1;
-      --hud-bg: rgba(15, 23, 42, 0.65);
-      --dock-bg: rgba(15, 23, 42, 0.75);
-      --window-bg: rgba(10, 14, 26, 0.88);
-      --cue-bg: rgba(255, 255, 255, 0.035);
-      --cue-hover: rgba(255, 255, 255, 0.07);
+      --hud-bg: rgba(15, 23, 42, 0.75);
+      --dock-bg: rgba(15, 23, 42, 0.85);
+      --window-bg: rgba(10, 14, 26, 0.92);
+      --cue-bg: rgba(255, 255, 255, 0.04);
+      --cue-hover: rgba(255, 255, 255, 0.08);
       --font-primary: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
       --font-code: 'JetBrains Mono', monospace;
       --font-serif: 'Playfair Display', serif;
@@ -36,8 +36,8 @@
     /* Light Mode Theme */
     body.light-mode {
       --bg-void: #F8FAFC;
-      --surface-glass: rgba(255, 255, 255, 0.88);
-      --surface-elevated: rgba(241, 245, 249, 0.95);
+      --surface-glass: rgba(255, 255, 255, 0.92);
+      --surface-elevated: rgba(241, 245, 249, 0.98);
       --border-subtle: rgba(15, 23, 42, 0.12);
       --border-accent: rgba(2, 132, 199, 0.4);
       --cyan: #0284C7;
@@ -49,9 +49,9 @@
       --text-pure: #0F172A;
       --text-muted: #64748B;
       --text-soft: #334155;
-      --hud-bg: rgba(255, 255, 255, 0.85);
-      --dock-bg: rgba(255, 255, 255, 0.92);
-      --window-bg: rgba(255, 255, 255, 0.95);
+      --hud-bg: rgba(255, 255, 255, 0.88);
+      --dock-bg: rgba(255, 255, 255, 0.94);
+      --window-bg: rgba(255, 255, 255, 0.98);
       --cue-bg: rgba(15, 23, 42, 0.035);
       --cue-hover: rgba(15, 23, 42, 0.07);
     }
@@ -64,15 +64,15 @@
       -webkit-user-select: none;
     }
 
-    body {
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
       background-color: var(--bg-void);
       color: var(--text-pure);
       font-family: var(--font-primary);
-      overflow: hidden;
-      width: 100vw;
-      height: 100vh;
       position: relative;
-      transition: background-color 0.4s ease, color 0.4s ease;
+      transition: background-color 0.35s ease, color 0.35s ease;
     }
 
     /* Ambient Dynamic Mesh Glow */
@@ -86,7 +86,6 @@
       filter: blur(80px);
       pointer-events: none;
       z-index: 1;
-      transition: opacity 0.4s ease;
     }
 
     body.light-mode .ambient-glow-1 {
@@ -103,7 +102,6 @@
       filter: blur(90px);
       pointer-events: none;
       z-index: 1;
-      transition: opacity 0.4s ease;
     }
 
     body.light-mode .ambient-glow-2 {
@@ -113,7 +111,7 @@
     /* Top Navigation HUD */
     .glass-hud-top {
       position: fixed;
-      top: 18px;
+      top: 16px;
       left: 24px;
       right: 24px;
       height: 52px;
@@ -306,14 +304,21 @@
       margin-left: 6px;
     }
 
-    /* Master Slide Deck Layout */
+    /* Master Stage & Presentation Container */
+    #presentationStage {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      overflow: hidden;
+    }
+
     .slide-deck {
       width: 100%;
       height: 100%;
       position: relative;
     }
 
-    /* Individual Slide Frame with Smoothest Cinematic Transitions */
+    /* Individual Slide Frame with Clean 100% Guaranteed Visibility */
     .slide-panel {
       position: absolute;
       top: 0;
@@ -323,15 +328,15 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      padding: 82px 40px 72px 40px;
+      padding: 80px 40px 76px 40px;
       opacity: 0;
       visibility: hidden;
-      transform: scale(0.95) translateY(35px);
-      transition: opacity 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-                  transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1),
-                  visibility 0.5s;
+      transform: scale(0.96) translateY(24px);
+      transition: opacity 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  transform 0.4s cubic-bezier(0.16, 1, 0.3, 1),
+                  visibility 0.4s;
       pointer-events: none;
-      z-index: 5;
+      z-index: 1;
     }
 
     .slide-panel.active {
@@ -345,17 +350,17 @@
     .slide-panel.prev {
       opacity: 0;
       visibility: hidden;
-      transform: scale(1.04) translateY(-35px);
+      transform: scale(1.03) translateY(-24px);
       pointer-events: none;
-      z-index: 5;
+      z-index: 1;
     }
 
     .slide-panel.next {
       opacity: 0;
       visibility: hidden;
-      transform: scale(0.95) translateY(35px);
+      transform: scale(0.96) translateY(24px);
       pointer-events: none;
-      z-index: 5;
+      z-index: 1;
     }
 
     /* 3D Glass Container for Slide */
@@ -363,19 +368,19 @@
       width: 100%;
       max-width: 1380px;
       height: 100%;
-      max-height: 780px;
+      max-height: 800px;
       background: var(--surface-glass);
       backdrop-filter: blur(48px);
       -webkit-backdrop-filter: blur(48px);
       border: 1px solid var(--border-subtle);
-      border-radius: 30px;
+      border-radius: 28px;
       box-shadow: 0 30px 90px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.15);
       display: flex;
       flex-direction: column;
       padding: 34px 44px;
       position: relative;
       overflow: hidden;
-      transition: background-color 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease;
+      transition: background-color 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease;
     }
 
     body.light-mode .slide-3d-card {
@@ -477,21 +482,12 @@
       gap: 14px;
       transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
       box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
-      cursor: pointer;
-      position: relative;
     }
 
     .cue-pill-card:hover {
       background: var(--cue-hover);
       transform: translateX(6px);
       border-color: var(--border-accent);
-    }
-
-    .cue-pill-card.focused-point {
-      border-color: var(--cyan) !important;
-      background: rgba(56, 189, 248, 0.12) !important;
-      box-shadow: 0 0 25px rgba(56, 189, 248, 0.45) !important;
-      transform: scale(1.02) translateX(8px);
     }
 
     .cue-icon-wrap {
@@ -928,246 +924,6 @@
       visibility: visible;
       transform: translateX(-50%) translateY(0);
     }
-
-    /* ==============================================================================
-       LIVING DOODLE MASCOT SYSTEM (Student / Professor Attire + Walk + Trip + Point)
-       ============================================================================== */
-    #doodleMascot {
-      position: fixed;
-      bottom: 12px;
-      left: 80px;
-      width: 86px;
-      height: 114px;
-      z-index: 900;
-      pointer-events: none;
-      transform-origin: 50% 90%;
-      transition: transform 0.15s ease-out;
-      will-change: transform, left;
-    }
-
-    /* Walk ground baseline */
-    .doodle-ground-line {
-      position: fixed;
-      bottom: 22px;
-      left: 0;
-      width: 100vw;
-      height: 1.5px;
-      background: linear-gradient(90deg, transparent, rgba(56, 189, 248, 0.25), rgba(139, 92, 246, 0.25), transparent);
-      z-index: 450;
-      pointer-events: none;
-    }
-
-    body.light-mode .doodle-ground-line {
-      background: linear-gradient(90deg, transparent, rgba(2, 132, 199, 0.3), rgba(124, 58, 237, 0.3), transparent);
-    }
-
-    /* Speech Bubble over Doodle Head */
-    .doodle-bubble {
-      position: absolute;
-      top: -38px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: rgba(15, 23, 42, 0.92);
-      backdrop-filter: blur(16px);
-      border: 1.5px solid var(--cyan);
-      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
-      color: white;
-      padding: 4px 12px;
-      border-radius: 100px;
-      font-size: 0.72rem;
-      font-weight: 800;
-      white-space: nowrap;
-      letter-spacing: 0.02em;
-      opacity: 0;
-      transition: opacity 0.25s ease, transform 0.25s ease;
-      pointer-events: none;
-      z-index: 910;
-    }
-
-    body.light-mode .doodle-bubble {
-      background: rgba(255, 255, 255, 0.95);
-      color: #0F172A;
-      box-shadow: 0 8px 20px rgba(15, 23, 42, 0.15);
-    }
-
-    .doodle-bubble.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(-4px);
-    }
-
-    .doodle-bubble::after {
-      content: '';
-      position: absolute;
-      bottom: -6px;
-      left: 50%;
-      transform: translateX(-50%);
-      border-width: 6px 5px 0 5px;
-      border-style: solid;
-      border-color: var(--cyan) transparent transparent transparent;
-    }
-
-    /* Doodle SVG Styles */
-    .doodle-svg {
-      width: 100%;
-      height: 100%;
-      overflow: visible;
-    }
-
-    .doodle-shadow {
-      fill: rgba(0, 0, 0, 0.25);
-    }
-
-    body.light-mode .doodle-shadow {
-      fill: rgba(15, 23, 42, 0.15);
-    }
-
-    .leg-stroke, .arm-stroke {
-      stroke: #0F172A;
-    }
-
-    body.light-mode .leg-stroke,
-    body.light-mode .arm-stroke {
-      stroke: #0F172A;
-    }
-
-    .shoe {
-      fill: #1E293B;
-    }
-
-    /* Attire Switching (Student vs Professor) */
-    .attire-professor,
-    .cap-professor,
-    .arm-pointing {
-      display: none;
-    }
-
-    #doodleMascot.professor .attire-student,
-    #doodleMascot.professor .cap-student,
-    #doodleMascot.professor .arm-normal {
-      display: none;
-    }
-
-    #doodleMascot.professor .attire-professor,
-    #doodleMascot.professor .cap-professor,
-    #doodleMascot.professor .arm-pointing {
-      display: block;
-    }
-
-    /* Morphing Pop Particle Effect */
-    #doodleMascot.morphing {
-      animation: doodleMorph 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }
-
-    @keyframes doodleMorph {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.22) rotate(6deg); }
-      100% { transform: scale(1); }
-    }
-
-    /* Walking Leg Cycles */
-    #doodleMascot.walking .leg-left {
-      animation: legCycleL 0.28s ease-in-out infinite alternate;
-      transform-origin: 42px 90px;
-    }
-
-    #doodleMascot.walking .leg-right {
-      animation: legCycleR 0.28s ease-in-out infinite alternate;
-      transform-origin: 58px 90px;
-    }
-
-    #doodleMascot.walking .arm-left {
-      animation: armSwingL 0.28s ease-in-out infinite alternate;
-      transform-origin: 36px 60px;
-    }
-
-    #doodleMascot.walking .arm-normal {
-      animation: armSwingR 0.28s ease-in-out infinite alternate;
-      transform-origin: 64px 60px;
-    }
-
-    #doodleMascot.walking .doodle-torso,
-    #doodleMascot.walking .doodle-head {
-      animation: walkBob 0.28s ease-in-out infinite alternate;
-    }
-
-    @keyframes legCycleL {
-      0% { transform: rotate(-24deg); }
-      100% { transform: rotate(24deg); }
-    }
-
-    @keyframes legCycleR {
-      0% { transform: rotate(24deg); }
-      100% { transform: rotate(-24deg); }
-    }
-
-    @keyframes armSwingL {
-      0% { transform: rotate(20deg); }
-      100% { transform: rotate(-20deg); }
-    }
-
-    @keyframes armSwingR {
-      0% { transform: rotate(-20deg); }
-      100% { transform: rotate(20deg); }
-    }
-
-    @keyframes walkBob {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-3.5px); }
-    }
-
-    /* Idle Breathing */
-    #doodleMascot.idle .doodle-head {
-      animation: idleBob 2.6s ease-in-out infinite alternate;
-    }
-
-    @keyframes idleBob {
-      0% { transform: translateY(0); }
-      100% { transform: translateY(-2px); }
-    }
-
-    /* Tripping & Falling Animation (Every 2 slides) */
-    #doodleMascot.tripping {
-      animation: tripAndFall 1.8s cubic-bezier(0.2, 0.8, 0.2, 1) forwards !important;
-    }
-
-    @keyframes tripAndFall {
-      0% { transform: translateY(0) rotate(0deg); }
-      18% { transform: translateY(-16px) rotate(-18deg); }
-      35% { transform: translateY(22px) rotate(-85deg); } /* falls flat on ground */
-      70% { transform: translateY(22px) rotate(-85deg); } /* stays on ground */
-      84% { transform: translateY(10px) rotate(-35deg); } /* pushes up */
-      100% { transform: translateY(0) rotate(0deg); } /* standing up brush knees */
-    }
-
-    /* Laser Pointer Line Fullscreen Overlay */
-    #laserCanvas {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100vw;
-      height: 100vh;
-      pointer-events: none;
-      z-index: 890;
-    }
-
-    /* Laser Pointer Target Focus Ring */
-    .laser-target-ring {
-      position: absolute;
-      width: 22px;
-      height: 22px;
-      border: 2px solid var(--rose);
-      border-radius: 50%;
-      box-shadow: 0 0 16px var(--rose), inset 0 0 8px var(--rose);
-      animation: pulseLaserTarget 0.8s infinite alternate;
-      pointer-events: none;
-      z-index: 895;
-      display: none;
-    }
-
-    @keyframes pulseLaserTarget {
-      0% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.7; }
-      100% { transform: translate(-50%, -50%) scale(1.3); opacity: 1; }
-    }
   </style>
 </head>
 <body>
@@ -1176,10 +932,7 @@
   <div class="ambient-glow-1"></div>
   <div class="ambient-glow-2"></div>
   <canvas id="confettiCanvas"></canvas>
-  <canvas id="laserCanvas"></canvas>
-  <div class="laser-target-ring" id="laserTargetRing"></div>
   <div class="glass-toast" id="toastMessage">✓ Action Completed</div>
-  <div class="doodle-ground-line"></div>
 
   <!-- Top Glass HUD -->
   <header class="glass-hud-top">
@@ -1231,119 +984,6 @@
     <div class="slide-progress-track" id="slideTrack"></div>
     <button class="ctrl-nav-btn" id="btnNextSlide" title="Next Slide (→ / ↓ / Space)">→</button>
     <span class="slide-idx-label" id="slideCounterText">1 / 10</span>
-  </div>
-
-  <!-- Living Doodle Mascot (Student / Professor) -->
-  <div id="doodleMascot" class="student idle">
-    <div class="doodle-bubble" id="doodleBubble">Hey there! 👋</div>
-    
-    <svg class="doodle-svg" viewBox="0 0 100 130">
-      <!-- Shadow -->
-      <ellipse cx="50" cy="122" rx="22" ry="5" class="doodle-shadow" />
-      
-      <!-- Legs (Group for walking animation) -->
-      <g class="doodle-legs">
-        <!-- Left Leg -->
-        <g class="leg leg-left">
-          <path d="M42 90 L40 114 L34 116" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none" class="leg-stroke" />
-          <ellipse cx="33" cy="116" rx="6" ry="3.5" class="shoe" />
-        </g>
-        <!-- Right Leg -->
-        <g class="leg leg-right">
-          <path d="M58 90 L60 114 L66 116" stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" fill="none" class="leg-stroke" />
-          <ellipse cx="67" cy="116" rx="6" ry="3.5" class="shoe" />
-        </g>
-      </g>
-      
-      <!-- Torso -->
-      <g class="doodle-torso">
-        <!-- Casual Student Hoodie (shown in .student mode) -->
-        <g class="attire-student">
-          <path d="M36 58 C36 50, 64 50, 64 58 L66 90 C66 93, 34 93, 34 90 Z" fill="#38BDF8" />
-          <!-- Hoodie pocket & strings -->
-          <path d="M40 76 Q50 82 60 76 L58 88 L42 88 Z" fill="#0284C7" />
-          <path d="M48 58 L48 68 M52 58 L52 68" stroke="white" stroke-width="1.5" stroke-linecap="round" />
-          <!-- Backpack strap -->
-          <path d="M38 56 L36 85" stroke="#1E293B" stroke-width="3" stroke-linecap="round" />
-        </g>
-        
-        <!-- Professor Blazer & Tie (shown in .professor mode) -->
-        <g class="attire-professor">
-          <path d="M35 56 C35 48, 65 48, 65 56 L67 90 L33 90 Z" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5" />
-          <!-- White Shirt V -->
-          <polygon points="44,54 56,54 50,72" fill="#FFFFFF" />
-          <!-- Red Tie -->
-          <polygon points="48,56 52,56 51,70 49,70" fill="#EF4444" />
-          <!-- Blazer buttons -->
-          <circle cx="50" cy="76" r="1.5" fill="#F59E0B" />
-          <circle cx="50" cy="83" r="1.5" fill="#F59E0B" />
-        </g>
-      </g>
-
-      <!-- Arms -->
-      <!-- Left Arm -->
-      <g class="doodle-arm arm-left">
-        <path d="M36 60 Q26 74 30 86" stroke-width="4.5" stroke-linecap="round" fill="none" class="arm-stroke" />
-        <circle cx="30" cy="87" r="4" fill="#FDE047" />
-      </g>
-
-      <!-- Right Arm (Normal vs Pointer Stick) -->
-      <g class="doodle-arm arm-right">
-        <!-- Normal student arm position -->
-        <g class="arm-normal">
-          <path d="M64 60 Q72 74 68 86" stroke-width="4.5" stroke-linecap="round" fill="none" class="arm-stroke" />
-          <circle cx="68" cy="87" r="4" fill="#FDE047" />
-        </g>
-        
-        <!-- Professor Pointer Arm (swings up when explaining) -->
-        <g class="arm-pointing">
-          <path d="M64 60 Q76 45 74 35" stroke-width="4.5" stroke-linecap="round" fill="none" class="arm-stroke" />
-          <circle cx="74" cy="34" r="4" fill="#FDE047" />
-          <!-- Telescoping Pointer Stick -->
-          <line x1="74" y1="34" x2="96" y2="8" stroke="#F59E0B" stroke-width="3.5" stroke-linecap="round" />
-          <circle cx="96" cy="8" r="4" fill="#EF4444" id="pointerTip" />
-        </g>
-      </g>
-
-      <!-- Head & Face -->
-      <g class="doodle-head">
-        <!-- Neck -->
-        <rect x="46" y="48" width="8" height="8" fill="#FDE047" />
-        <!-- Round Head -->
-        <circle cx="50" cy="32" r="18" fill="#FDE047" stroke="#1E293B" stroke-width="1.8" />
-        
-        <!-- Eyes -->
-        <circle cx="44" cy="30" r="2.5" fill="#1E293B" class="eye eye-left" />
-        <circle cx="56" cy="30" r="2.5" fill="#1E293B" class="eye eye-right" />
-        <!-- Cheerful Smile -->
-        <path d="M45 37 Q50 43 55 37" stroke="#1E293B" stroke-width="2" stroke-linecap="round" fill="none" class="mouth" />
-        <!-- Blushing Cheeks -->
-        <circle cx="41" cy="34" r="2" fill="#F472B6" opacity="0.6" />
-        <circle cx="59" cy="34" r="2" fill="#F472B6" opacity="0.6" />
-
-        <!-- Student Backwards Cap -->
-        <g class="cap-student">
-          <path d="M33 25 C33 14, 67 14, 67 25 Z" fill="#8B5CF6" />
-          <path d="M30 25 C26 25, 24 28, 22 29" stroke="#8B5CF6" stroke-width="3.5" stroke-linecap="round" />
-          <circle cx="50" cy="14" r="2" fill="#FDE047" />
-        </g>
-
-        <!-- Professor Mortarboard Graduation Cap & Spectacles -->
-        <g class="cap-professor">
-          <!-- Mortarboard Diamond -->
-          <polygon points="50,6 74,13 50,20 26,13" fill="#1E293B" stroke="#F59E0B" stroke-width="1.5" />
-          <!-- Skullcap -->
-          <path d="M36 17 C36 21, 64 21, 64 17" fill="#1E293B" />
-          <!-- Tassel -->
-          <path d="M50 13 Q66 16 68 28" stroke="#F59E0B" stroke-width="1.8" fill="none" />
-          <circle cx="68" cy="29" r="2" fill="#F59E0B" />
-          <!-- Round Professor Spectacles -->
-          <circle cx="44" cy="30" r="5" stroke="#F59E0B" stroke-width="1.5" fill="none" />
-          <circle cx="56" cy="30" r="5" stroke="#F59E0B" stroke-width="1.5" fill="none" />
-          <line x1="49" y1="30" x2="51" y2="30" stroke="#F59E0B" stroke-width="1.5" />
-        </g>
-      </g>
-    </svg>
   </div>
 
   <!-- 10-Slide Sorter Grid View (Triggered by 'G' or Sorter button) -->
@@ -2042,7 +1682,7 @@
     </div>
   </main>
 
-  <!-- Interactive Presentation Engine with Mascot & Theme Controls -->
+  <!-- Interactive Presentation Engine -->
   <script>
     // State
     const slides = Array.from(document.querySelectorAll('.slide-panel'));
@@ -2054,13 +1694,6 @@
     const sorterCardsGrid = document.getElementById('sorterCardsGrid');
     const btnSlideSorter = document.getElementById('btnSlideSorter');
     const toastMsg = document.getElementById('toastMessage');
-
-    // Mascot Elements
-    const mascot = document.getElementById('doodleMascot');
-    const mascotBubble = document.getElementById('doodleBubble');
-    const laserCanvas = document.getElementById('laserCanvas');
-    const laserCtx = laserCanvas.getContext('2d');
-    const laserTargetRing = document.getElementById('laserTargetRing');
 
     let activeSlideIndex = 0;
     let isSoundEnabled = true;
@@ -2139,24 +1772,6 @@
       } catch (e) {}
     }
 
-    function playStumbleSound() {
-      if (!isSoundEnabled) return;
-      try {
-        const ctx = getAudioCtx();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(450, ctx.currentTime);
-        osc.frequency.linearRampToValueAtTime(120, ctx.currentTime + 0.35);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.35);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.36);
-      } catch (e) {}
-    }
-
     // Toggle Sound Button
     const btnToggleSound = document.getElementById('btnToggleSound');
     btnToggleSound.addEventListener('click', () => {
@@ -2224,20 +1839,12 @@
     const stepPills = Array.from(document.querySelectorAll('.step-pill'));
     const sorterThumbs = Array.from(document.querySelectorAll('.sorter-thumb'));
 
-    // Slide Navigation with Mascot Walking Across Slides & Tripping
-    let slideChangeCounter = 0;
-
+    // Slide Navigation
     function navigateToSlide(newIdx) {
       if (newIdx < 0 || newIdx >= slides.length) return;
       if (newIdx === activeSlideIndex) return;
 
       playWhoosh();
-      slideChangeCounter++;
-
-      const isForward = newIdx > activeSlideIndex;
-
-      // Mascot walks across screen during slide transition
-      doodleWalkAcrossSlide(isForward);
 
       // Cleanly transition all slides
       slides.forEach((s, idx) => {
@@ -2267,13 +1874,6 @@
       // Update Notes
       const notes = slides[activeSlideIndex].getAttribute('data-notes') || 'No notes available.';
       notesDynamicText.textContent = notes;
-
-      // Check for Tripping & Falling: Once every 2 slides!
-      if (slideChangeCounter % 2 === 0 || (activeSlideIndex + 1) % 2 === 0) {
-        setTimeout(() => {
-          triggerDoodleTrip();
-        }, 900);
-      }
     }
 
     function nextSlide() {
@@ -2401,8 +2001,6 @@
     function resizeConfettiCanvas() {
       confettiCanvas.width = window.innerWidth;
       confettiCanvas.height = window.innerHeight;
-      laserCanvas.width = window.innerWidth;
-      laserCanvas.height = window.innerHeight;
     }
     window.addEventListener('resize', resizeConfettiCanvas);
     resizeConfettiCanvas();
@@ -2654,234 +2252,6 @@
         showToast('✓ Loaded: Anand Kumar (Zero Debt)');
       }
     }
-
-    // ==============================================================================
-    // LIVING DOODLE MASCOT CONTROLLER (Walking, Idle, Tripping, Pointing & 5s Timer)
-    // ==============================================================================
-    let doodleX = 100;
-    let doodleTargetX = 100;
-    let doodleSpeed = 0;
-    let isDoodleFacingRight = true;
-    let isExplaining = false;
-    let explanationTimer = null;
-    let isDoodleTripping = false;
-    let targetCardRect = null;
-    let bubbleTimeout = null;
-
-    function showDoodleBubble(text, duration = 3000) {
-      if (bubbleTimeout) clearTimeout(bubbleTimeout);
-      mascotBubble.innerHTML = text;
-      mascotBubble.classList.add('show');
-      bubbleTimeout = setTimeout(() => {
-        mascotBubble.classList.remove('show');
-      }, duration);
-    }
-
-    // Follow Mouse Cursor Horizontally
-    window.addEventListener('mousemove', (e) => {
-      if (isExplaining || isDoodleTripping) return;
-      // Clamp target within safe screen bounds
-      const minX = 40;
-      const maxX = window.innerWidth - 130;
-      doodleTargetX = Math.max(minX, Math.min(maxX, e.clientX - 43));
-    });
-
-    // Physics & Animation Loop for Doodle
-    function runDoodleLoop() {
-      if (!isDoodleTripping) {
-        const dx = doodleTargetX - doodleX;
-        doodleSpeed = dx * 0.08;
-
-        if (Math.abs(dx) > 3) {
-          doodleX += doodleSpeed;
-          mascot.classList.add('walking');
-          mascot.classList.remove('idle');
-
-          // Orientation facing
-          if (dx > 2 && !isDoodleFacingRight) {
-            isDoodleFacingRight = true;
-          } else if (dx < -2 && isDoodleFacingRight) {
-            isDoodleFacingRight = false;
-          }
-        } else {
-          doodleX = doodleTargetX;
-          mascot.classList.remove('walking');
-          mascot.classList.add('idle');
-        }
-
-        mascot.style.left = `${doodleX}px`;
-        mascot.style.transform = `scaleX(${isDoodleFacingRight ? 1 : -1})`;
-      }
-
-      // Draw Laser Pointer Beam if Explaining
-      drawLaserBeam();
-
-      requestAnimationFrame(runDoodleLoop);
-    }
-    requestAnimationFrame(runDoodleLoop);
-
-    // Laser Beam Renderer
-    function drawLaserBeam() {
-      laserCtx.clearRect(0, 0, laserCanvas.width, laserCanvas.height);
-      if (!isExplaining || !targetCardRect) {
-        laserTargetRing.style.display = 'none';
-        return;
-      }
-
-      // Tip of pointer stick relative to mascot
-      const tipX = doodleX + (isDoodleFacingRight ? 84 : 2);
-      const tipY = window.innerHeight - 105;
-
-      // Target Card focal point
-      const cardX = targetCardRect.left + 30;
-      const cardY = targetCardRect.top + targetCardRect.height / 2;
-
-      // Draw Glowing Pulsing Laser Beam
-      laserCtx.save();
-      laserCtx.beginPath();
-      laserCtx.moveTo(tipX, tipY);
-      laserCtx.lineTo(cardX, cardY);
-      laserCtx.strokeStyle = '#EF4444';
-      laserCtx.lineWidth = 3;
-      laserCtx.shadowColor = '#EF4444';
-      laserCtx.shadowBlur = 14;
-      laserCtx.setLineDash([8, 4]);
-      laserCtx.stroke();
-
-      // Core white laser beam center
-      laserCtx.beginPath();
-      laserCtx.moveTo(tipX, tipY);
-      laserCtx.lineTo(cardX, cardY);
-      laserCtx.strokeStyle = '#FFFFFF';
-      laserCtx.lineWidth = 1.2;
-      laserCtx.setLineDash([]);
-      laserCtx.stroke();
-      laserCtx.restore();
-
-      // Position target focus ring
-      laserTargetRing.style.display = 'block';
-      laserTargetRing.style.left = `${cardX}px`;
-      laserTargetRing.style.top = `${cardY}px`;
-    }
-
-    // Click on ANY Cue Point to Trigger Professor Explanation Mode (5 Seconds)
-    function setupCuePointClickToExplain() {
-      const allPoints = document.querySelectorAll('.cue-pill-card, .interactive-btn');
-      allPoints.forEach(card => {
-        card.addEventListener('click', (e) => {
-          explainPoint(card);
-        });
-      });
-    }
-
-    function explainPoint(card) {
-      if (isDoodleTripping) return;
-
-      // Clear previous explanation
-      if (explanationTimer) clearInterval(explanationTimer);
-      document.querySelectorAll('.cue-pill-card').forEach(c => c.classList.remove('focused-point'));
-      card.classList.add('focused-point');
-
-      const rect = card.getBoundingClientRect();
-      targetCardRect = rect;
-
-      // Walk directly towards the card base
-      const cardCenterX = rect.left + rect.width / 2;
-      doodleTargetX = Math.max(50, Math.min(window.innerWidth - 130, cardCenterX - 43));
-      isDoodleFacingRight = (cardCenterX >= doodleX);
-
-      // Morph into Professor with Sound & Sparkle
-      playBellChime();
-      mascot.classList.add('morphing');
-      setTimeout(() => mascot.classList.remove('morphing'), 350);
-
-      mascot.classList.remove('student');
-      mascot.classList.add('professor');
-      isExplaining = true;
-
-      // 5-Second Countdown
-      let secondsLeft = 5;
-      showDoodleBubble(`🎓 <b>Professor Explaining:</b> <span style="color:#F59E0B">${secondsLeft}s</span>`, 5200);
-
-      explanationTimer = setInterval(() => {
-        secondsLeft--;
-        if (secondsLeft > 0) {
-          showDoodleBubble(`🎓 <b>Professor Explaining:</b> <span style="color:#F59E0B">${secondsLeft}s</span>`, 1200);
-        } else {
-          // Finished 5 seconds: Retract stick & Change back to Casual Student!
-          clearInterval(explanationTimer);
-          isExplaining = false;
-          targetCardRect = null;
-          card.classList.remove('focused-point');
-
-          playWhoosh();
-          mascot.classList.add('morphing');
-          setTimeout(() => mascot.classList.remove('morphing'), 350);
-
-          mascot.classList.remove('professor');
-          mascot.classList.add('student');
-          showDoodleBubble('Cool! Back to Student Mode 🎒', 2500);
-        }
-      }, 1000);
-    }
-
-    // Tripping and Falling Animation (Once Every 2 Slides)
-    function triggerDoodleTrip() {
-      if (isExplaining || isDoodleTripping) return;
-      isDoodleTripping = true;
-
-      playStumbleSound();
-      mascot.classList.remove('idle', 'walking');
-      mascot.classList.add('tripping');
-      showDoodleBubble('Whoa! Stumbled! 😅', 2000);
-
-      setTimeout(() => {
-        playBellChime();
-        mascot.classList.remove('tripping');
-        isDoodleTripping = false;
-        mascot.classList.add('idle');
-        showDoodleBubble('All good! Back on track! 👍', 2500);
-      }, 1800);
-    }
-
-    // Walking Across Screen when Changing Slides
-    function doodleWalkAcrossSlide(isForward) {
-      if (isExplaining) {
-        clearInterval(explanationTimer);
-        isExplaining = false;
-        targetCardRect = null;
-        mascot.classList.remove('professor');
-        mascot.classList.add('student');
-      }
-
-      if (isForward) {
-        // Run towards right edge, then enter from left edge
-        doodleTargetX = window.innerWidth + 60;
-        setTimeout(() => {
-          doodleX = -60;
-          doodleTargetX = Math.min(180, window.innerWidth * 0.2);
-          isDoodleFacingRight = true;
-          showDoodleBubble('Next Slide ➔', 1800);
-        }, 300);
-      } else {
-        // Run towards left edge, then enter from right edge
-        doodleTargetX = -60;
-        setTimeout(() => {
-          doodleX = window.innerWidth + 60;
-          doodleTargetX = Math.max(window.innerWidth - 220, window.innerWidth * 0.8);
-          isDoodleFacingRight = false;
-          showDoodleBubble('⬅ Previous Slide', 1800);
-        }, 300);
-      }
-    }
-
-    // Setup initial handlers
-    setupCuePointClickToExplain();
-
-    // Initial greeting
-    setTimeout(() => {
-      showDoodleBubble('Hi! I am your Kirana AI Guide! 👋', 3500);
-    }, 1200);
   </script>
 </body>
 </html>
