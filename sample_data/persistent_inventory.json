@@ -104,9 +104,9 @@
     "sell_price": 42
   },
   {
-    "item_name": "Parle-G",
+    "item_name": "Biscuits (Parle-G)",
     "category": "Packaged Food",
-    "stock_units": 42,
+    "stock_units": 45,
     "unit": "packets",
     "cost_price": 8,
     "sell_price": 10

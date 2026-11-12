@@ -1389,7 +1389,8 @@ def get_initial_inventory():
         {"item_name": "Surf Excel Matic 1kg", "category": "Household Cleaning", "stock_units": 15, "unit": "packets", "cost_price": 120, "sell_price": 140},
         {"item_name": "Brooke Bond Red Label Tea 250g", "category": "Beverages", "stock_units": 19, "unit": "boxes", "cost_price": 125, "sell_price": 145},
         {"item_name": "Maggi 2-Minute Noodles (4pk)", "category": "Packaged Food", "stock_units": 28, "unit": "packs", "cost_price": 48, "sell_price": 56},
-        {"item_name": "Farm Fresh Eggs (6pk)", "category": "Dairy & Poultry", "stock_units": 25, "unit": "trays", "cost_price": 36, "sell_price": 42}
+        {"item_name": "Farm Fresh Eggs (6pk)", "category": "Dairy & Poultry", "stock_units": 25, "unit": "trays", "cost_price": 36, "sell_price": 42},
+        {"item_name": "Biscuits (Parle-G)", "category": "Packaged Food", "stock_units": 45, "unit": "packets", "cost_price": 8, "sell_price": 10}
     ]
 
 def save_inventory_to_disk():
@@ -1403,6 +1404,204 @@ def save_inventory_to_disk():
     except Exception as e:
         print(f"Error saving persistent_inventory.json: {e}")
         return False
+
+# ----------------- REAL-TIME INVENTORY AUTO-DEDUCTION ENGINE -----------------
+INVENTORY_ALIASES = {
+    "Biscuits (Parle-G)": ["biscuit", "biscuits", "parle", "parleg", "parle-g", "cookie", "cookies"],
+    "Aashirvaad Atta 5kg": ["atta", "aashirvaad", "wheat", "flour", "gehun", "godhi"],
+    "Toor Dal 2kg": ["toor dal", "toordal", "toor", "dal", "pulses", "bele", "togari"],
+    "Gold Winner Sunflower Oil 1L": ["oil", "sunflower", "gold winner", "cooking oil", "yenne", "tel"],
+    "Nandini Special Milk 1L": ["milk", "nandini milk", "nandini", "haalu", "doodh"],
+    "Nandini Pure Ghee 500ml": ["ghee", "nandini ghee", "tuppa"],
+    "Tata Salt 1kg": ["salt", "tata salt", "tata namak", "uppu", "namak"],
+    "Sona Masoori Rice 10kg": ["rice", "sona masoori", "akki", "chawal", "arisi"],
+    "Sugar 2kg": ["sugar", "sakkare", "chini"],
+    "Mysore Sandal Soap (3pk)": ["soap", "sandal", "mysore sandal", "sabun"],
+    "Surf Excel Matic 1kg": ["surf excel", "surf", "detergent", "washing powder"],
+    "Brooke Bond Red Label Tea 250g": ["tea", "red label", "chai", "chaaha", "tea powder"],
+    "Maggi 2-Minute Noodles (4pk)": ["maggi", "noodles", "maggie"],
+    "Farm Fresh Eggs (6pk)": ["egg", "eggs", "motte", "anda"]
+}
+
+def extract_qty_from_text(chunk_text):
+    """
+    Extracts the item quantity sold from diverse text formats:
+    - Explicit units: '12 packets of biscuits', '12 pkts', '3 bags'
+    - Multiplier: '(x2)', 'x 2', '* 3'
+    - Leading count: '12 biscuits', '3 milk'
+    - Trailing count: 'biscuits 12', 'biscuits: 12', 'biscuits (12)'
+    - Distinguishes package sizes like '5kg', '1L', '500ml' from actual count of items.
+    """
+    if not chunk_text:
+        return 1
+    chunk_clean = str(chunk_text).strip()
+    
+    # 1. Quantity with explicit packaging unit keyword (highest precedence)
+    m_kw = re.search(r'(\d+)\s*(?:packets?|pkts?|bags?|pouches?|jars?|packs?|boxes?|trays?|nos?|units?|pieces?|pcs?|bottles?|tins?)\b', chunk_clean, re.IGNORECASE)
+    if m_kw:
+        return max(1, int(m_kw.group(1)))
+        
+    # 2. Multipliers e.g. '(x2)', 'x 3', '* 4'
+    m_mult = re.search(r'[\(x\*]\s*(\d+)\s*[\)]?', chunk_clean, re.IGNORECASE)
+    if m_mult and not re.search(r'\d+\s*(?:kg|g|ml|l|ltr)\b', m_mult.group(0), re.IGNORECASE):
+        return max(1, int(m_mult.group(1)))
+        
+    # 3. Leading number e.g. '12 biscuits', '3 milk' (excluding leading package sizes like '5kg atta')
+    m_lead = re.match(r'^\s*(\d+)\s+(.+)', chunk_clean)
+    if m_lead and not re.match(r'^\d+\s*(?:kg|g|ml|l|ltr)\b', chunk_clean, re.IGNORECASE):
+        return max(1, int(m_lead.group(1)))
+        
+    # 4. Trailing number e.g. 'Biscuits 12', 'Biscuits: 12', 'Biscuits - 12'
+    m_trail = re.search(r'(?:[:\-=]\s*|\s+)(\d+)\s*$', chunk_clean)
+    if m_trail:
+        return max(1, int(m_trail.group(1)))
+        
+    # 5. Number in parentheses e.g. 'Biscuits (12)'
+    m_paren = re.search(r'\(\s*(\d+)\s*\)', chunk_clean)
+    if m_paren and not re.search(r'\d+\s*(?:kg|g|ml|l|ltr)\b', m_paren.group(0), re.IGNORECASE):
+        return max(1, int(m_paren.group(1)))
+        
+    # 6. Any standalone number not followed by kg/g/ml/l
+    nums = re.finditer(r'\b(\d+)\b(?!\s*(?:kg|g|ml|l|ltr)\b)', chunk_clean, re.IGNORECASE)
+    for n in nums:
+        return max(1, int(n.group(1)))
+        
+    return 1
+
+def find_inventory_sku_match(chunk_text, inventory_list):
+    """
+    Finds the best matching SKU in the store inventory using aliases,
+    word boundaries, and substring matching.
+    """
+    text = str(chunk_text).lower()
+    best_match = None
+    best_score = 0
+    
+    # Check alias keywords (longest alias match preferred)
+    for item in inventory_list:
+        name = item.get("item_name", "")
+        aliases = INVENTORY_ALIASES.get(name, [name.lower()])
+        for alias in sorted(aliases, key=lambda a: -len(a)):
+            pattern = r'\b' + re.escape(alias.lower()) + r'\b'
+            if re.search(pattern, text):
+                score = len(alias) + 15
+                if score > best_score:
+                    best_score = score
+                    best_match = item
+                    
+    if best_match:
+        return best_match
+        
+    # Check substring / token matching in item_name
+    for item in inventory_list:
+        name_lower = item.get("item_name", "").lower()
+        core_name = re.sub(r'\(.*?\)', '', name_lower).strip()
+        for token in text.split():
+            clean_tok = re.sub(r'[^a-zA-Z]', '', token).lower()
+            if len(clean_tok) >= 3 and clean_tok in core_name:
+                return item
+                
+    return None
+
+def deduct_store_inventory_for_items(items_input):
+    """
+    Deducts sold item quantities from store stocks across both Udhaar and Sales/Cash accounts.
+    Updates st.session_state.store_inventory and st.session_state.inventory_stock in real-time,
+    and commits the new stock units permanently to sample_data/persistent_inventory.json.
+    
+    Handles:
+    - Single strings: '12 packets of biscuits', 'Biscuits 12', 'Tata Salt 1kg x2, 3 packets biscuits'
+    - Lists of strings: ['12 packets of biscuits', '3 milk']
+    - Lists of dicts: [{'name': 'Biscuits', 'qty': 12}]
+    
+    Returns: List of deduction summary dictionaries:
+    [{'item_name': 'Biscuits (Parle-G)', 'qty': 12, 'remaining': 33, 'unit': 'packets'}, ...]
+    """
+    if not items_input:
+        return []
+        
+    if "store_inventory" not in st.session_state:
+        st.session_state.store_inventory = get_initial_inventory()
+    if "inventory_stock" not in st.session_state:
+        st.session_state.inventory_stock = {x["item_name"]: x["stock_units"] for x in st.session_state.store_inventory}
+        
+    raw_chunks = []
+    if isinstance(items_input, str):
+        parts = re.split(r'[,;\n|]+|\band\b', items_input, flags=re.IGNORECASE)
+        raw_chunks = [p.strip() for p in parts if p.strip()]
+    elif isinstance(items_input, list):
+        for elem in items_input:
+            if isinstance(elem, dict):
+                name = elem.get("name") or elem.get("item_name") or elem.get("item", "")
+                qty = elem.get("qty") or elem.get("quantity") or 1
+                raw_chunks.append(f"{qty} {name}")
+            elif isinstance(elem, str):
+                parts = re.split(r'[,;\n|]+', elem)
+                raw_chunks.extend([p.strip() for p in parts if p.strip()])
+            else:
+                raw_chunks.append(str(elem))
+    else:
+        raw_chunks = [str(items_input)]
+        
+    deductions = []
+    
+    for chunk in raw_chunks:
+        if not chunk or len(chunk.strip()) < 2:
+            continue
+            
+        qty = extract_qty_from_text(chunk)
+        matched_sku = find_inventory_sku_match(chunk, st.session_state.store_inventory)
+        
+        if matched_sku:
+            old_stock = int(matched_sku.get("stock_units", 0))
+            new_stock = max(0, old_stock - qty)
+            matched_sku["stock_units"] = new_stock
+            st.session_state.inventory_stock[matched_sku["item_name"]] = new_stock
+            deductions.append({
+                "item_name": matched_sku["item_name"],
+                "qty": qty,
+                "remaining": new_stock,
+                "unit": matched_sku.get("unit", "units")
+            })
+        else:
+            clean_name = re.sub(r'^\s*\d+\s*(?:packets?|pkts?|bags?|pouches?|jars?|packs?|boxes?|trays?|nos?|units?|pieces?|pcs?)?\s*(?:of\s+)?', '', chunk, flags=re.IGNORECASE).strip()
+            clean_name = re.sub(r'[\(\[\{].*?[\)\]\}]', '', clean_name).strip()
+            clean_name = re.sub(r'[:\-=0-9]+$', '', clean_name).strip()
+            
+            if len(re.sub(r'[^a-zA-Z]', '', clean_name)) >= 2:
+                sku_title = clean_name.title()
+                initial_stock = 45 if "biscuit" in sku_title.lower() else 50
+                rem_stock = max(0, initial_stock - qty)
+                new_sku = {
+                    "item_name": sku_title,
+                    "category": "Packaged Food" if "biscuit" in sku_title.lower() else "General Kirana",
+                    "stock_units": rem_stock,
+                    "unit": "packets" if "biscuit" in sku_title.lower() else "units",
+                    "cost_price": 20,
+                    "sell_price": 25
+                }
+                st.session_state.store_inventory.append(new_sku)
+                st.session_state.inventory_stock[sku_title] = rem_stock
+                deductions.append({
+                    "item_name": sku_title,
+                    "qty": qty,
+                    "remaining": rem_stock,
+                    "unit": new_sku["unit"]
+                })
+                
+    if deductions:
+        save_inventory_to_disk()
+        
+    return deductions
+
+def format_inventory_deduction_msg(deductions):
+    """
+    Formats a user-friendly message for inventory deductions.
+    """
+    if not deductions:
+        return ""
+    items_str = ", ".join([f"{d['qty']} {d['unit']} of {d['item_name']} ({d['remaining']} {d['unit']} left in stock)" for d in deductions])
+    return f"📦 Stock Deducted: {items_str}"
 
 def get_unique_customer_directory():
     """
@@ -1830,7 +2029,7 @@ def render_mobile_kirana_os():
     # 3. THUMB-FRIENDLY ACTION DOCK
     m_action = st.radio(
         "Select Operation:",
-        ["➕ New Bill", "🎙️ Voice Khata", "📸 Scan Bill", "📒 Udhaar List", "📋 Quick Ledger"],
+        ["➕ New Bill", "🎙️ Voice Khata", "📸 Scan Bill", "📒 Udhaar List", "📋 Quick Ledger", "📦 Store Stock"],
         horizontal=True,
         label_visibility="collapsed",
         key="mobile_nav_segmented"
@@ -1960,11 +2159,16 @@ def render_mobile_kirana_os():
                         "category": st.session_state.get("m_autofill_cat", "Local Resident"),
                         "notes": "Mobile Quick Bill Entry"
                     }
+                    deductions = deduct_store_inventory_for_items(m_items)
+                    deduct_msg = format_inventory_deduction_msg(deductions)
                     st.session_state.ledger_db.insert(0, new_entry)
                     save_ledger_to_disk()
                     play_success_sound()
                     st.balloons()
-                    st.toast(f"🎉 Bill saved for {m_cname} (₹{m_total})!", icon="✅")
+                    toast_msg = f"🎉 Bill saved for {m_cname} (₹{m_total})!"
+                    if deduct_msg:
+                        toast_msg += f" • {deduct_msg}"
+                    st.toast(toast_msg, icon="✅")
                     st.rerun()
 
     elif m_action == "🎙️ Voice Khata":
@@ -2022,11 +2226,16 @@ def render_mobile_kirana_os():
                         "category": "Regular Kirana Buyer",
                         "notes": "Recorded via Vernacular Voice Khata"
                     }
+                    deductions = deduct_store_inventory_for_items(v_res.get("items", []))
+                    deduct_msg = format_inventory_deduction_msg(deductions)
                     st.session_state.ledger_db.insert(0, v_entry)
                     save_ledger_to_disk()
                     play_success_sound()
                     st.balloons()
-                    st.toast(f"🎉 Voice bill added for {v_entry['customer']}!", icon="🎙️")
+                    toast_msg = f"🎉 Voice bill added for {v_entry['customer']}!"
+                    if deduct_msg:
+                        toast_msg += f" • {deduct_msg}"
+                    st.toast(toast_msg, icon="🎙️")
                     st.rerun()
 
     elif m_action == "📸 Scan Bill":
@@ -2083,11 +2292,17 @@ def render_mobile_kirana_os():
                         "category": "Regular Kirana Buyer",
                         "notes": "Scanned via Gemini Vision OCR"
                     }
+                    ocr_items = [f"{i.get('name', '')} {i.get('qty', 1)}" for i in ocr_res.get('items', [])]
+                    deductions = deduct_store_inventory_for_items(ocr_items)
+                    deduct_msg = format_inventory_deduction_msg(deductions)
                     st.session_state.ledger_db.insert(0, r_entry)
                     save_ledger_to_disk()
                     play_success_sound()
                     st.balloons()
-                    st.toast("🎉 Scanned receipt saved to ledger!", icon="📸")
+                    toast_msg = "🎉 Scanned receipt saved to ledger!"
+                    if deduct_msg:
+                        toast_msg += f" • {deduct_msg}"
+                    st.toast(toast_msg, icon="📸")
                     st.rerun()
 
     elif m_action == "📒 Udhaar List":
@@ -2172,6 +2387,43 @@ def render_mobile_kirana_os():
                 </div>
             </div>
             """, unsafe_allow_html=True)
+
+    elif m_action == "📦 Store Stock":
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:8px; margin:6px 0 8px 0;">
+            <span style="font-size:1rem; font-weight:800; color:var(--text-primary); font-family:'Sreda',serif;">📦 Real-Time Store Inventory</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.container(border=True):
+            m_stock_q = st.text_input("🔍 Search Item:", placeholder="e.g. Biscuits, Milk, Atta...", key="m_stock_search")
+            sq = m_stock_q.strip().lower()
+            
+            st.caption("Live stock units automatically decrement upon sale (Udhaar or Cash):")
+            
+            filtered_stock = [
+                x for x in st.session_state.store_inventory
+                if not sq or sq in x["item_name"].lower() or sq in x.get("category", "").lower()
+            ]
+            
+            for item in filtered_stock:
+                stock_u = int(item.get("stock_units", 0))
+                is_low = stock_u <= 10
+                badge_bg = "rgba(239, 68, 68, 0.15)" if is_low else "rgba(16, 185, 129, 0.15)"
+                badge_color = "#EF4444" if is_low else "#10B981"
+                
+                st.markdown(f"""
+                <div style="background:var(--card-bg); border:1px solid var(--hairline-border); border-radius:10px; padding:10px 14px; margin-bottom:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:800; font-size:0.92rem; color:var(--text-primary);">{item['item_name']}</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">{item.get('category', 'Kirana')} • ₹{item.get('sell_price', 0)} / {item.get('unit', 'unit')}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <span style="background:{badge_bg}; color:{badge_color}; font-weight:900; font-size:0.95rem; padding:4px 10px; border-radius:8px;">{stock_u} {item.get('unit', 'units')}</span>
+                        <div style="font-size:0.7rem; color:var(--text-muted); margin-top:3px;">{'⚠️ Low Stock' if is_low else 'In Stock'}</div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
 
 
 # ----------------- DYNAMIC VIEW DISPATCHER (MOBILE VS LAPTOP) -----------------
@@ -3004,12 +3256,17 @@ def render_tab1_vision_receipt():
                             "status": "Settled" if res.get("balance_udhaar", 0) == 0 else "Active Udhaar",
                             "notes": res.get("due_note", "Auto-extracted from bill photo")
                         }
+                        deductions = deduct_store_inventory_for_items(new_row["items"])
+                        deduct_msg = format_inventory_deduction_msg(deductions)
                         st.session_state.ledger_db.insert(0, new_row)
                         save_ledger_to_disk()
                         try: play_success_sound()
                         except Exception: pass
                         st.balloons()
-                        st.success(f"🎉 Saved to Master Cloud Ledger as **{new_sl}**! Balance ₹{res.get('balance_udhaar', 0):,} tracked.")
+                        success_msg = f"🎉 Saved to Master Cloud Ledger as **{new_sl}**! Balance ₹{res.get('balance_udhaar', 0):,} tracked."
+                        if deduct_msg:
+                            success_msg += f" • {deduct_msg}"
+                        st.success(success_msg)
                         st.rerun()
                 with col_btn_b:
                     if st.button("🔄 Clear & Scan Next Bill", use_container_width=True, key="btn_clear_receipt"):
@@ -3172,20 +3429,17 @@ def render_tab2_voice_khata():
                     "status": "Settled" if cur_bal == 0 else "Active Udhaar",
                     "notes": v_parsed["intent"]
                 }
+                deductions = deduct_store_inventory_for_items(v_parsed.get("items", []))
+                deduct_msg = format_inventory_deduction_msg(deductions)
                 st.session_state.ledger_db.insert(0, new_voice_tx)
                 save_ledger_to_disk()
-                
-                # Live inventory update from voice bill sales (Requirement 7)
-                for item_str in v_parsed["items"]:
-                    for inv_row in st.session_state.get("store_inventory", []):
-                        if inv_row["item_name"].split()[0].lower() in item_str.lower():
-                            inv_row["stock_units"] = max(0, inv_row["stock_units"] - 1)
-                            
-                save_inventory_to_disk()
                 try: play_success_sound()
                 except Exception: pass
                 st.balloons()
-                st.success(f"🎉 Spoken bill successfully posted to Master Cloud Ledger as **{new_sl}**!")
+                success_msg = f"🎉 Spoken bill successfully posted to Master Cloud Ledger as **{new_sl}**!"
+                if deduct_msg:
+                    success_msg += f" • {deduct_msg}"
+                st.success(success_msg)
                 st.rerun()
 
     with col_v_right:
@@ -4012,6 +4266,7 @@ def render_tab6_master_ledger():
                             "category": c_cat,
                             "notes": f"Imported from {uploaded_excel.name}"
                         }
+                        deduct_store_inventory_for_items(c_items)
                         st.session_state.ledger_db.insert(0, entry_obj)
                         import_count += 1
                         
@@ -4528,21 +4783,7 @@ def render_tab6_master_ledger():
     st.caption("Live stock units synchronized with Mandi purchases and store sales. Edit existing stock quantities or add brand new grocery items:")
 
     if "store_inventory" not in st.session_state:
-        st.session_state.store_inventory = [
-            {"item_name": "Aashirvaad Atta 5kg", "category": "Flour & Grains", "stock_units": 14, "unit": "bags", "cost_price": 240, "sell_price": 275},
-            {"item_name": "Toor Dal 2kg", "category": "Pulses & Dals", "stock_units": 18, "unit": "packets", "cost_price": 280, "sell_price": 310},
-            {"item_name": "Gold Winner Sunflower Oil 1L", "category": "Edible Oils", "stock_units": 22, "unit": "pouches", "cost_price": 125, "sell_price": 140},
-            {"item_name": "Nandini Special Milk 1L", "category": "Dairy", "stock_units": 10, "unit": "packets", "cost_price": 48, "sell_price": 52},
-            {"item_name": "Nandini Pure Ghee 500ml", "category": "Dairy", "stock_units": 8, "unit": "jars", "cost_price": 290, "sell_price": 320},
-            {"item_name": "Tata Salt 1kg", "category": "Spices & Essentials", "stock_units": 35, "unit": "packets", "cost_price": 22, "sell_price": 25},
-            {"item_name": "Sona Masoori Rice 10kg", "category": "Flour & Grains", "stock_units": 6, "unit": "bags", "cost_price": 580, "sell_price": 640},
-            {"item_name": "Sugar 2kg", "category": "Spices & Essentials", "stock_units": 16, "unit": "packets", "cost_price": 82, "sell_price": 92},
-            {"item_name": "Mysore Sandal Soap (3pk)", "category": "Personal Care", "stock_units": 24, "unit": "packs", "cost_price": 155, "sell_price": 180},
-            {"item_name": "Surf Excel Matic 1kg", "category": "Household Cleaning", "stock_units": 15, "unit": "packets", "cost_price": 120, "sell_price": 140},
-            {"item_name": "Brooke Bond Red Label Tea 250g", "category": "Beverages", "stock_units": 19, "unit": "boxes", "cost_price": 125, "sell_price": 145},
-            {"item_name": "Maggi 2-Minute Noodles (4pk)", "category": "Packaged Food", "stock_units": 28, "unit": "packs", "cost_price": 48, "sell_price": 56},
-            {"item_name": "Farm Fresh Eggs (6pk)", "category": "Dairy & Poultry", "stock_units": 25, "unit": "trays", "cost_price": 36, "sell_price": 42}
-        ]
+        st.session_state.store_inventory = get_initial_inventory()
 
     total_inv_skus = len(st.session_state.store_inventory)
     total_inv_units = sum(x["stock_units"] for x in st.session_state.store_inventory)
@@ -5003,11 +5244,16 @@ def render_tab7_create_account():
                     "category": cust_category,
                     "notes": due_note
                 }
+                deductions = deduct_store_inventory_for_items(prod_details)
+                deduct_msg = format_inventory_deduction_msg(deductions)
                 st.session_state.ledger_db.insert(0, new_account_entry)
                 save_ledger_to_disk()
                 play_success_sound()
                 st.balloons()
-                st.toast(f"🎉 Duplicate confirmed & registered for {cust_name} (Serial: {new_account_entry['customer_sl']})!", icon="✅")
+                toast_msg = f"🎉 Duplicate confirmed & registered for {cust_name} (Serial: {new_account_entry['customer_sl']})!"
+                if deduct_msg:
+                    toast_msg += f" • {deduct_msg}"
+                st.toast(toast_msg, icon="✅")
                 st.rerun()
                 
             if cancel_dup:
@@ -5040,11 +5286,16 @@ def render_tab7_create_account():
                         "category": cust_category,
                         "notes": due_note
                     }
+                    deductions = deduct_store_inventory_for_items(prod_details)
+                    deduct_msg = format_inventory_deduction_msg(deductions)
                     st.session_state.ledger_db.insert(0, new_account_entry)
                     save_ledger_to_disk()
                     play_success_sound()
                     st.balloons()
-                    st.toast(f"🎉 Account successfully created for {cust_name}! Serial `{new_account_entry['customer_sl']}` | Customer ID `{new_account_entry['customer_id']}` registered in Ledger.", icon="✅")
+                    toast_msg = f"🎉 Account successfully created for {cust_name}! Serial `{new_account_entry['customer_sl']}` | Customer ID `{new_account_entry['customer_id']}` registered in Ledger."
+                    if deduct_msg:
+                        toast_msg += f" • {deduct_msg}"
+                    st.toast(toast_msg, icon="✅")
                     st.rerun()
 
 
