@@ -10,8 +10,8 @@
   <style>
     :root {
       --bg-void: #060911;
-      --surface-glass: rgba(15, 23, 42, 0.72);
-      --surface-elevated: rgba(30, 41, 59, 0.75);
+      --surface-glass: rgba(15, 23, 42, 0.76);
+      --surface-elevated: rgba(30, 41, 59, 0.82);
       --border-subtle: rgba(255, 255, 255, 0.12);
       --border-accent: rgba(56, 189, 248, 0.35);
       --cyan: #38BDF8;
@@ -69,6 +69,32 @@
       z-index: 999;
     }
 
+    /* Floating Toast Notification */
+    .glass-toast {
+      position: fixed;
+      top: 75px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(16, 185, 129, 0.92);
+      backdrop-filter: blur(20px);
+      color: white;
+      padding: 8px 20px;
+      border-radius: 100px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(16, 185, 129, 0.5);
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .glass-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
     /* Master Presentation Viewport with 3D Depth */
     #presentationStage {
       width: 100vw;
@@ -103,7 +129,7 @@
       display: flex;
       align-items: center;
       gap: 12px;
-      background: rgba(15, 23, 42, 0.82);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(28px);
       -webkit-backdrop-filter: blur(28px);
       border: 1px solid var(--border-subtle);
@@ -159,7 +185,7 @@
     }
 
     .stage-timer-pill {
-      background: rgba(15, 23, 42, 0.82);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(20px);
       border: 1px solid var(--border-subtle);
       padding: 7px 14px;
@@ -175,7 +201,7 @@
     }
 
     .hud-control-btn {
-      background: rgba(15, 23, 42, 0.82);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(24px);
       border: 1px solid var(--border-subtle);
       color: var(--text-pure);
@@ -216,7 +242,7 @@
       display: flex;
       align-items: center;
       gap: 14px;
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.88);
       backdrop-filter: blur(32px);
       -webkit-backdrop-filter: blur(32px);
       border: 1px solid var(--border-subtle);
@@ -289,7 +315,7 @@
       position: relative;
     }
 
-    /* Individual Slide Frame */
+    /* Individual Slide Frame with Clean Non-Colliding Transitions */
     .slide-panel {
       position: absolute;
       top: 0;
@@ -302,23 +328,36 @@
       padding: 85px 44px 75px 44px;
       opacity: 0;
       visibility: hidden;
-      transform: scale(0.92) translateY(40px) rotateX(-5deg);
-      transition: opacity 0.65s cubic-bezier(0.19, 1, 0.22, 1),
-                  transform 0.65s cubic-bezier(0.19, 1, 0.22, 1),
-                  visibility 0.65s;
+      transform: scale(0.94) translateY(30px);
+      transition: opacity 0.45s cubic-bezier(0.19, 1, 0.22, 1),
+                  transform 0.45s cubic-bezier(0.19, 1, 0.22, 1),
+                  visibility 0.45s;
       pointer-events: none;
+      z-index: 5;
     }
 
     .slide-panel.active {
-      opacity: 1;
-      visibility: visible;
-      transform: scale(1) translateY(0) rotateX(0deg);
-      pointer-events: auto;
+      opacity: 1 !important;
+      visibility: visible !important;
+      transform: scale(1) translateY(0) !important;
+      pointer-events: auto !important;
+      z-index: 20 !important;
     }
 
     .slide-panel.prev {
       opacity: 0;
-      transform: scale(1.05) translateY(-40px) rotateX(5deg);
+      visibility: hidden;
+      transform: scale(1.03) translateY(-30px);
+      pointer-events: none;
+      z-index: 5;
+    }
+
+    .slide-panel.next {
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(0.94) translateY(30px);
+      pointer-events: none;
+      z-index: 5;
     }
 
     /* 3D Glass Container for Slide */
@@ -482,8 +521,8 @@
     /* Staggered In-Slide Reveal Animation */
     .slide-panel .cue-pill-card {
       opacity: 0;
-      transform: translateY(24px);
-      transition: all 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+      transform: translateY(20px);
+      transition: all 0.45s cubic-bezier(0.19, 1, 0.22, 1);
     }
 
     .slide-panel.active .cue-pill-card {
@@ -491,12 +530,12 @@
       transform: translateY(0);
     }
 
-    .slide-panel.active .cue-pill-card:nth-child(1) { transition-delay: 0.08s; }
-    .slide-panel.active .cue-pill-card:nth-child(2) { transition-delay: 0.16s; }
-    .slide-panel.active .cue-pill-card:nth-child(3) { transition-delay: 0.24s; }
-    .slide-panel.active .cue-pill-card:nth-child(4) { transition-delay: 0.32s; }
-    .slide-panel.active .cue-pill-card:nth-child(5) { transition-delay: 0.40s; }
-    .slide-panel.active .cue-pill-card:nth-child(6) { transition-delay: 0.48s; }
+    .slide-panel.active .cue-pill-card:nth-child(1) { transition-delay: 0.06s; }
+    .slide-panel.active .cue-pill-card:nth-child(2) { transition-delay: 0.12s; }
+    .slide-panel.active .cue-pill-card:nth-child(3) { transition-delay: 0.18s; }
+    .slide-panel.active .cue-pill-card:nth-child(4) { transition-delay: 0.24s; }
+    .slide-panel.active .cue-pill-card:nth-child(5) { transition-delay: 0.30s; }
+    .slide-panel.active .cue-pill-card:nth-child(6) { transition-delay: 0.36s; }
 
     /* Right Column: High-Impact Real UI Demo Windows */
     .showcase-window {
@@ -639,7 +678,7 @@
       100% { height: 42px; }
     }
 
-    /* 3x3 Grid Sorter Mode */
+    /* 3x3 Grid Sorter Mode with Dedicated Header & Close Button */
     .slide-sorter-grid {
       position: fixed;
       top: 0;
@@ -647,21 +686,77 @@
       width: 100vw;
       height: 100vh;
       background: rgba(6, 9, 17, 0.96);
-      backdrop-filter: blur(40px);
-      z-index: 200;
+      backdrop-filter: blur(48px);
+      -webkit-backdrop-filter: blur(48px);
+      z-index: 800;
       display: none;
+      flex-direction: column;
+      padding: 24px 60px 40px 60px;
+    }
+
+    .slide-sorter-grid.open {
+      display: flex !important;
+    }
+
+    .sorter-top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .sorter-heading-pill {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(56, 189, 248, 0.14);
+      border: 1px solid rgba(56, 189, 248, 0.35);
+      color: var(--cyan);
+      padding: 6px 16px;
+      border-radius: 100px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+    }
+
+    .sorter-close-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 8px 18px;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .sorter-close-btn:hover {
+      background: var(--rose);
+      border-color: var(--rose);
+      transform: scale(1.05);
+    }
+
+    .sorter-cards-grid {
+      display: grid;
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 1fr);
-      gap: 20px;
-      padding: 60px 80px;
-      overflow-y: auto;
+      gap: 18px;
+      flex: 1;
+      min-height: 0;
     }
 
     .sorter-thumb {
       background: var(--surface-glass);
       border: 1.5px solid var(--border-subtle);
       border-radius: 18px;
-      padding: 16px;
+      padding: 16px 20px;
       cursor: pointer;
       display: flex;
       flex-direction: column;
@@ -672,27 +767,31 @@
 
     .sorter-thumb:hover {
       border-color: var(--cyan);
+      background: rgba(30, 41, 59, 0.95);
       transform: translateY(-4px) scale(1.02);
       box-shadow: 0 15px 40px rgba(56, 189, 248, 0.3);
     }
 
     .sorter-thumb.active {
       border-color: var(--cyan);
-      background: rgba(56, 189, 248, 0.12);
-      box-shadow: 0 0 25px rgba(56, 189, 248, 0.4);
+      background: rgba(56, 189, 248, 0.16);
+      box-shadow: 0 0 25px rgba(56, 189, 248, 0.45);
     }
 
     .sorter-thumb-num {
       font-family: var(--font-code);
-      font-size: 0.74rem;
+      font-size: 0.76rem;
       font-weight: 800;
       color: var(--cyan);
+      letter-spacing: 0.08em;
     }
 
     .sorter-thumb-title {
-      font-size: 0.92rem;
+      font-size: 0.94rem;
       font-weight: 800;
       color: white;
+      line-height: 1.35;
+      margin: 4px 0;
     }
 
     /* Speaker Notes Drawer */
@@ -748,6 +847,9 @@
   <!-- Confetti Celebration Canvas -->
   <canvas id="confettiCanvas"></canvas>
 
+  <!-- Floating Toast Notification -->
+  <div class="glass-toast" id="toastMessage">✓ Copied to Clipboard!</div>
+
   <!-- Fixed Top HUD -->
   <div class="glass-hud-top">
     <div class="hud-pill-group">
@@ -800,8 +902,18 @@
     <span class="slide-idx-label" id="slideCounterText">1 / 9</span>
   </div>
 
-  <!-- 3x3 Slide Sorter Grid View (Triggered by 'G') -->
-  <div class="slide-sorter-grid" id="sorterGrid"></div>
+  <!-- 3x3 Slide Sorter Grid View (Triggered by 'G' or Grid button) -->
+  <div class="slide-sorter-grid" id="sorterGrid">
+    <div class="sorter-top-bar">
+      <div class="sorter-heading-pill">
+        ⊞ 3x3 SLIDE SORTER OVERVIEW • CLICK ANY SLIDE TO JUMP
+      </div>
+      <button class="sorter-close-btn" onclick="toggleSlideSorter(false)">
+        ✖ Close Grid (Esc)
+      </button>
+    </div>
+    <div class="sorter-cards-grid" id="sorterCardsGrid"></div>
+  </div>
 
   <!-- Master Stage -->
   <main id="presentationStage">
@@ -1364,9 +1476,9 @@
               <div class="window-body">
                 <div style="font-size:0.72rem; color:var(--text-muted); font-weight:800;">TAP TO SELECT DEMO CUSTOMER:</div>
                 <div style="display:flex; gap:6px; flex-wrap:wrap;">
-                  <button class="hud-control-btn active" onclick="selectDemoCustomer('prithvi')" style="padding:3px 10px; font-size:0.72rem;">Prithvi J</button>
-                  <button class="hud-control-btn" onclick="selectDemoCustomer('suresh')" style="padding:3px 10px; font-size:0.72rem;">Suresh Gowda</button>
-                  <button class="hud-control-btn" onclick="selectDemoCustomer('anand')" style="padding:3px 10px; font-size:0.72rem;">Anand Kumar</button>
+                  <button class="hud-control-btn active" id="btnCustPrithvi" onclick="selectDemoCustomer('prithvi')" style="padding:3px 10px; font-size:0.72rem;">Prithvi J</button>
+                  <button class="hud-control-btn" id="btnCustSuresh" onclick="selectDemoCustomer('suresh')" style="padding:3px 10px; font-size:0.72rem;">Suresh Gowda</button>
+                  <button class="hud-control-btn" id="btnCustAnand" onclick="selectDemoCustomer('anand')" style="padding:3px 10px; font-size:0.72rem;">Anand Kumar</button>
                 </div>
 
                 <div style="background:rgba(56,189,248,0.08); border:1.5px solid rgba(56,189,248,0.35); border-radius:14px; padding:12px;" id="autofillCardPreview">
@@ -1468,15 +1580,30 @@
 
   <!-- Interactive Presentation Engine -->
   <script>
-    // State
+    // Elements & State
     const slides = Array.from(document.querySelectorAll('.slide-panel'));
     const slideTrack = document.getElementById('slideTrack');
     const slideCounterText = document.getElementById('slideCounterText');
     const notesOverlay = document.getElementById('notesOverlay');
     const notesDynamicText = document.getElementById('notesDynamicText');
     const sorterGrid = document.getElementById('sorterGrid');
+    const sorterCardsGrid = document.getElementById('sorterCardsGrid');
+    const btnSlideSorter = document.getElementById('btnSlideSorter');
+    const toastMsg = document.getElementById('toastMessage');
+
     let activeSlideIndex = 0;
     let isSoundEnabled = true;
+
+    // Toast Alert Helper (Non-Blocking)
+    let toastTimeout = null;
+    function showToast(text) {
+      if (toastTimeout) clearTimeout(toastTimeout);
+      toastMsg.textContent = text;
+      toastMsg.classList.add('show');
+      toastTimeout = setTimeout(() => {
+        toastMsg.classList.remove('show');
+      }, 2200);
+    }
 
     // Web Audio Synthesizer (Zero External Dependencies)
     let audioCtx = null;
@@ -1549,50 +1676,65 @@
       isSoundEnabled = !isSoundEnabled;
       btnAudio.textContent = isSoundEnabled ? '🔊 Sound ON' : '🔇 Sound OFF';
       btnAudio.classList.toggle('active', isSoundEnabled);
+      showToast(isSoundEnabled ? '🔊 Sound Effects Enabled' : '🔇 Sound Effects Muted');
     });
 
-    // Build Progress Track Pills
+    // Build Progress Track Pills & Sorter Thumbs
     slides.forEach((s, idx) => {
+      // Progress Pill
       const p = document.createElement('div');
       p.className = `step-pill ${idx === 0 ? 'active' : ''}`;
       p.addEventListener('click', () => navigateToSlide(idx));
       slideTrack.appendChild(p);
 
-      // Build Sorter Thumb
+      // Sorter Card
       const thumb = document.createElement('div');
       thumb.className = `sorter-thumb ${idx === 0 ? 'active' : ''}`;
-      const title = s.querySelector('.slide-title-hero').innerText.replace('\n', ' ');
+      const titleEl = s.querySelector('.slide-title-hero');
+      const title = titleEl ? titleEl.textContent.trim().replace(/\s+/g, ' ') : `Slide ${idx + 1}`;
       thumb.innerHTML = `
         <span class="sorter-thumb-num">SLIDE 0${idx + 1}</span>
         <div class="sorter-thumb-title">${title}</div>
-        <span style="font-size:0.68rem; color:var(--text-muted);">Click to jump</span>
+        <span style="font-size:0.68rem; color:var(--cyan); font-weight:700;">➔ Tap to Open</span>
       `;
       thumb.addEventListener('click', () => {
         navigateToSlide(idx);
-        toggleSlideSorter();
+        toggleSlideSorter(false);
       });
-      sorterGrid.appendChild(thumb);
+      sorterCardsGrid.appendChild(thumb);
     });
 
     const stepPills = Array.from(document.querySelectorAll('.step-pill'));
     const sorterThumbs = Array.from(document.querySelectorAll('.sorter-thumb'));
 
+    // 100% Robust Navigation Engine (Fixes Blank Slide Bug)
     function navigateToSlide(newIdx) {
       if (newIdx < 0 || newIdx >= slides.length) return;
       if (newIdx === activeSlideIndex) return;
 
       playWhoosh();
-      slides[activeSlideIndex].classList.remove('active');
-      slides[activeSlideIndex].classList.add(newIdx > activeSlideIndex ? 'prev' : '');
 
-      slides[newIdx].classList.remove('prev');
-      slides[newIdx].classList.add('active');
+      // Cleanly transition all slides
+      slides.forEach((s, idx) => {
+        s.classList.remove('active', 'prev', 'next');
+        if (idx === newIdx) {
+          s.classList.add('active');
+        } else if (idx < newIdx) {
+          s.classList.add('prev');
+        } else {
+          s.classList.add('next');
+        }
+      });
 
-      stepPills[activeSlideIndex].classList.remove('active');
-      stepPills[newIdx].classList.add('active');
+      // Update Track Pills
+      stepPills.forEach((p, idx) => {
+        p.classList.toggle('active', idx === newIdx);
+      });
 
-      sorterThumbs[activeSlideIndex].classList.remove('active');
-      sorterThumbs[newIdx].classList.add('active');
+      // Update Sorter Thumbs
+      sorterThumbs.forEach((t, idx) => {
+        t.classList.toggle('active', idx === newIdx);
+      });
 
       activeSlideIndex = newIdx;
       slideCounterText.textContent = `${activeSlideIndex + 1} / ${slides.length}`;
@@ -1634,7 +1776,7 @@
       } else if (e.key === 'c' || e.key === 'C') {
         triggerCelebrationConfetti();
       } else if (e.key === 'Escape') {
-        if (sorterGrid.style.display === 'grid') toggleSlideSorter();
+        toggleSlideSorter(false);
         if (notesOverlay.style.display === 'block') toggleNotesDrawer();
       }
     });
@@ -1666,11 +1808,18 @@
     }
     document.getElementById('btnNotesToggle').addEventListener('click', toggleNotesDrawer);
 
-    // Sorter Grid Toggle
-    function toggleSlideSorter() {
-      sorterGrid.style.display = (sorterGrid.style.display === 'grid') ? 'none' : 'grid';
+    // Sorter Grid Toggle (Fixes Grid Bug)
+    function toggleSlideSorter(forceState) {
+      if (typeof forceState === 'boolean') {
+        sorterGrid.classList.toggle('open', forceState);
+      } else {
+        sorterGrid.classList.toggle('open');
+      }
+      const isOpen = sorterGrid.classList.contains('open');
+      btnSlideSorter.classList.toggle('active', isOpen);
+      if (isOpen) playWhoosh();
     }
-    document.getElementById('btnSlideSorter').addEventListener('click', toggleSlideSorter);
+    btnSlideSorter.addEventListener('click', () => toggleSlideSorter());
 
     // Stage Elapsed Timer Clock
     let stageSeconds = 0;
@@ -1766,6 +1915,7 @@
         });
       }
       runConfettiLoop();
+      showToast('🎉 Confetti Celebration Fired!');
     }
 
     function runConfettiLoop() {
@@ -1795,12 +1945,15 @@
     function triggerLaserScan() {
       playLaserSweep();
       const line = document.getElementById('laserScanLine');
-      line.classList.remove('scanning');
-      void line.offsetWidth;
-      line.classList.add('scanning');
-      setTimeout(() => {
-        playBellChime();
-      }, 1200);
+      if (line) {
+        line.classList.remove('scanning');
+        void line.offsetWidth;
+        line.classList.add('scanning');
+        setTimeout(() => {
+          playBellChime();
+          showToast('✓ Gemini Vision OCR: ₹963 Bill Parsed');
+        }, 1200);
+      }
     }
 
     function triggerVoicePlayback() {
@@ -1809,35 +1962,46 @@
       bars.forEach(b => b.classList.add('active'));
       setTimeout(() => {
         bars.forEach(b => b.classList.remove('active'));
+        showToast('✓ Audio Transcribed & ₹45 Udhaar Created');
       }, 2400);
     }
 
     function switchTone(tone) {
       playWhoosh();
-      document.getElementById('btnToneGentle').classList.toggle('active', tone === 'gentle');
-      document.getElementById('btnToneFriendly').classList.toggle('active', tone === 'friendly');
-      document.getElementById('btnToneFirm').classList.toggle('active', tone === 'firm');
+      const bGentle = document.getElementById('btnToneGentle');
+      const bFriendly = document.getElementById('btnToneFriendly');
+      const bFirm = document.getElementById('btnToneFirm');
+      if (bGentle) bGentle.classList.toggle('active', tone === 'gentle');
+      if (bFriendly) bFriendly.classList.toggle('active', tone === 'friendly');
+      if (bFirm) bFirm.classList.toggle('active', tone === 'firm');
 
       const el = document.getElementById('waMessagePreview');
-      if (tone === 'gentle') {
-        el.innerHTML = '<b>Namaskara Prithvi avare 🙏</b><br>Friendly greeting from Sri Manjunatha Provision Store. Your balance of <b>₹3,500</b> is pending. Kindly clear via PhonePe UPI. Dhanyavadagalu!';
-      } else if (tone === 'friendly') {
-        el.innerHTML = '<b>Hello Prithvi! 👋</b><br>Hope you are well. Just a quick reminder about your kirana bill balance of <b>₹3,500</b> from Tuesday. Kindly tap the link to pay via UPI whenever convenient.';
-      } else {
-        el.innerHTML = '<b>Attention Prithvi J</b><br>This is an automated statement from Sri Manjunatha Provision Store. Your credit balance of <b>₹3,500</b> is now 7 days overdue. Please clear today via UPI.';
+      if (el) {
+        if (tone === 'gentle') {
+          el.innerHTML = '<b>Namaskara Prithvi avare 🙏</b><br>Friendly greeting from Sri Manjunatha Provision Store. Your balance of <b>₹3,500</b> is pending. Kindly clear via PhonePe UPI. Dhanyavadagalu!';
+        } else if (tone === 'friendly') {
+          el.innerHTML = '<b>Hello Prithvi! 👋</b><br>Hope you are well. Just a quick reminder about your kirana bill balance of <b>₹3,500</b> from Tuesday. Kindly tap the link to pay via UPI whenever convenient.';
+        } else {
+          el.innerHTML = '<b>Attention Prithvi J</b><br>This is an automated statement from Sri Manjunatha Provision Store. Your credit balance of <b>₹3,500</b> is now 7 days overdue. Please clear today via UPI.';
+        }
+        showToast(`✓ Tone Switched to ${tone.toUpperCase()}`);
       }
     }
 
     function copyUpiVpa() {
-      navigator.clipboard.writeText('prithvi.j@ibl');
+      try {
+        navigator.clipboard.writeText('prithvi.j@ibl');
+      } catch(e) {}
       playBellChime();
-      alert('✓ Copied UPI ID: prithvi.j@ibl');
+      showToast('✓ Copied UPI ID: prithvi.j@ibl');
     }
 
     function copyLiveUrl() {
-      navigator.clipboard.writeText('https://oral-massachusetts-hardcover-ali.trycloudflare.com');
+      try {
+        navigator.clipboard.writeText('https://oral-massachusetts-hardcover-ali.trycloudflare.com');
+      } catch(e) {}
       playBellChime();
-      alert('✓ Copied Live URL to Clipboard!');
+      showToast('✓ Copied Live URL to Clipboard!');
     }
 
     // Stock Stepper Simulation
@@ -1849,6 +2013,7 @@
       if (item === 'Oil' && stockOil > 0) stockOil--;
       document.getElementById('stockAtta').textContent = `${stockAtta} bags`;
       document.getElementById('stockOil').textContent = `${stockOil} pouches`;
+      showToast(`Stock updated: ${item} units decremented`);
     }
     function incrementStock(item) {
       playBellChime();
@@ -1856,6 +2021,7 @@
       if (item === 'Oil') stockOil++;
       document.getElementById('stockAtta').textContent = `${stockAtta} bags`;
       document.getElementById('stockOil').textContent = `${stockOil} pouches`;
+      showToast(`Stock updated: ${item} units added`);
     }
 
     // Autocomplete Demo Customer Switcher
@@ -1866,6 +2032,15 @@
       const c = document.getElementById('afContact');
       const cid = document.getElementById('afCid');
       const sl = document.getElementById('afSl');
+      const btnP = document.getElementById('btnCustPrithvi');
+      const btnS = document.getElementById('btnCustSuresh');
+      const btnA = document.getElementById('btnCustAnand');
+
+      if (btnP) btnP.classList.toggle('active', name === 'prithvi');
+      if (btnS) btnS.classList.toggle('active', name === 'suresh');
+      if (btnA) btnA.classList.toggle('active', name === 'anand');
+
+      if (!n || !b || !c || !cid || !sl) return;
 
       if (name === 'prithvi') {
         n.textContent = 'Prithvi J';
@@ -1874,6 +2049,7 @@
         c.innerHTML = '📞 <b>+91 9980478475</b> • 📧 <b>prithvi99722@gmail.com</b>';
         cid.textContent = 'CID: CID-0516';
         sl.textContent = 'Sl: SL-1561';
+        showToast('✓ Loaded: Prithvi J (₹3,500 Due)');
       } else if (name === 'suresh') {
         n.textContent = 'Suresh Gowda';
         b.textContent = '⚠️ ₹45 ACTIVE UDHAAR';
@@ -1881,6 +2057,7 @@
         c.innerHTML = '📞 <b>+91 98451 22334</b> • 📧 <b>suresh.gowda@gmail.com</b>';
         cid.textContent = 'CID: CID-0104';
         sl.textContent = 'Sl: SL-0104';
+        showToast('✓ Loaded: Suresh Gowda (₹45 Due)');
       } else {
         n.textContent = 'Anand Kumar';
         b.textContent = '🟢 ZERO DEBT';
@@ -1888,6 +2065,7 @@
         c.innerHTML = '📞 <b>+91 98450 12345</b> • 📧 <b>anand.kumar@gmail.com</b>';
         cid.textContent = 'CID: CID-0012';
         sl.textContent = 'Sl: SL-0012';
+        showToast('✓ Loaded: Anand Kumar (Zero Debt)');
       }
     }
   </script>
