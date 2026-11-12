@@ -10,12 +10,56 @@ import random
 import hashlib
 import subprocess
 import tempfile
-from PIL import Image
+import io
+from PIL import Image, ImageOps
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+except Exception as _heif_err:
+    pass
 import pandas as pd
 import altair as alt
 import streamlit as st
 import streamlit.components.v1 as components
 from streamlit_mic_recorder import speech_to_text
+
+def prepare_display_image(img_input):
+    """
+    Converts raw image bytes or uploaded file to a displayable JPEG image format,
+    handling HEIC/HEIF (common on Apple iPhones) with proper EXIF orientation.
+    """
+    if not img_input:
+        return None
+    try:
+        raw_bytes = img_input if isinstance(img_input, (bytes, bytearray)) else img_input.getvalue()
+        try:
+            pil_img = Image.open(io.BytesIO(raw_bytes))
+            pil_img = ImageOps.exif_transpose(pil_img)
+            fmt = getattr(pil_img, "format", "") or ""
+            if fmt.upper() in ["HEIF", "HEIC"] or (isinstance(img_input, str) and img_input.lower().endswith(('.heic', '.heif'))):
+                buf = io.BytesIO()
+                pil_img.convert("RGB").save(buf, format="JPEG", quality=92)
+                return buf.getvalue()
+            return raw_bytes
+        except Exception:
+            try:
+                import pillow_heif
+                heif_file = pillow_heif.read_heif(raw_bytes)
+                pil_img = Image.frombytes(
+                    heif_file.mode, 
+                    heif_file.size, 
+                    heif_file.data,
+                    "raw",
+                )
+                pil_img = ImageOps.exif_transpose(pil_img)
+                buf = io.BytesIO()
+                pil_img.convert("RGB").save(buf, format="JPEG", quality=92)
+                return buf.getvalue()
+            except Exception:
+                return raw_bytes
+    except Exception as e:
+        print(f"prepare_display_image error: {e}")
+        return img_input
 
 # Universal CommonMark indentation guard: prevents indented HTML lines from rendering as <pre><code>
 _orig_st_markdown = st.markdown
@@ -1410,7 +1454,7 @@ def save_inventory_to_disk():
 # ----------------- REAL-TIME INVENTORY AUTO-DEDUCTION ENGINE -----------------
 INVENTORY_ALIASES = {
     "Biscuits (Parle-G)": ["biscuit", "biscuits", "parle", "parleg", "parle-g", "cookie", "cookies"],
-    "Aashirvaad Atta 5kg": ["atta", "aashirvaad", "wheat", "flour", "gehun", "godhi"],
+    "Aashirvaad Atta 5kg": ["atta", "aashirvaad", "ashirad", "ashirvad", "ashirwaad", "wheat", "flour", "gehun", "godhi"],
     "Toor Dal 2kg": ["toor dal", "toordal", "toor", "dal", "pulses", "bele", "togari"],
     "Gold Winner Sunflower Oil 1L": ["oil", "sunflower", "gold winner", "cooking oil", "yenne", "tel"],
     "Nandini Special Milk 1L": ["milk", "nandini milk", "nandini", "haalu", "doodh"],
@@ -1764,6 +1808,8 @@ def parse_receipt_text_lines(raw_lines):
     """
     Parses OCR-extracted text lines from physical Indian kirana receipts into
     structured ledger records with exact customer name, items, quantities, and prices.
+    Accurately supports 2-dash format (Item - Qty - Price), 1-dash format,
+    standalone totals, standalone customer names, and Indic abbreviations.
     """
     if isinstance(raw_lines, str):
         raw_lines = [l.strip() for l in raw_lines.split('\n') if l.strip()]
@@ -1772,6 +1818,9 @@ def parse_receipt_text_lines(raw_lines):
     for l in raw_lines:
         s = l.replace('R$', 'Rs ').replace('₹', 'Rs ')
         s = re.sub(r'\b(?:Rs\.?|INR|Es|Ks)\b', 'Rs ', s, flags=re.IGNORECASE)
+        # Normalize OCR typos e.g. '20pk+' or '20pk*' to '20 packets'
+        s = re.sub(r'(\d+)\s*pk[\+\*]', r'\1 packets', s, flags=re.IGNORECASE)
+        s = re.sub(r'(\d+)\s*pkt\b', r'\1 packets', s, flags=re.IGNORECASE)
         norm_lines.append(s.strip())
         
     merged = []
@@ -1801,40 +1850,43 @@ def parse_receipt_text_lines(raw_lines):
     payment_mode = 'Cash'
     due_note = 'Extracted from physical receipt'
     items = []
+    standalone_numbers = []
     
+    # 1. Store name detection
     for l in merged[:3]:
         if re.search(r'store|kirana|provision|traders|supermarket|mart|shop', l, re.IGNORECASE):
             store_name = l.strip()
             break
             
+    # 2. Customer detection with explicit prefixes
     for l in merged:
         m_c = re.search(r'(?:Customer|Name|Cust|M/s|To)[:\s]+([^,\n\d]+(?:\([^\)]+\))?)', l, re.IGNORECASE)
         if m_c:
             customer = m_c.group(1).strip()
             break
-    if not customer:
-        for cand in merged[:4]:
-            if not re.search(r'\b(?:store|kirana|bill|date|total|rs|cash|paid|balance|invoice|receipt)\b', cand, re.IGNORECASE) and not re.search(r'\d{3,}', cand):
-                customer = cand.strip()
-                break
-    if not customer:
-        customer = 'Walk-in Customer'
-        
+            
+    # 3. Date detection
     for l in merged:
         m_d = re.search(r'\b(\d{1,2}[\/\-\.]\d{1,2}[\/\-\.]\d{2,4})\b', l)
         if m_d:
             date_val = m_d.group(1)
             break
             
-    item_pattern = r'^(?:\d+[\.\)]\s*)?([A-Za-z0-9\s\(\)]+?)(?:\s+[xX*]\s*([0-9A-Za-z]+))?(?:\s*[\-:]\s*|\s+)(?:Rs\s*)?(\d+)\s*$'
+    # Patterns for items:
+    # Two-dash format: 'Ashirad atta - 10kg - 950' or 'Biscuits - 20 packets - 200'
+    pat_dash2 = r'^(?:\d+[\.\)]\s*)?([A-Za-z\s0-9]+?)\s*[\-:]\s*([0-9A-Za-z\s]+?)\s*[\-:]\s*(?:Rs\s*)?(\d+)\s*$'
+    # Single-dash format: 'Aashirvaad Atta 5kg x 1 - Rs 240' or 'Item - 100'
+    pat_dash1 = r'^(?:\d+[\.\)]\s*)?([A-Za-z0-9\s\(\)]+?)(?:\s+[xX*]\s*([0-9A-Za-z]+))?(?:\s*[\-:]\s*|\s+)(?:Rs\s*)?(\d+)\s*$'
     
     for l in merged:
+        # Check Total
         if re.search(r'\b(?:Total|Total Bill|Total Amount|Grand Total|Net Amount)\b', l, re.IGNORECASE):
             nums = re.findall(r'\b\d+\b', l)
             if nums:
                 total_bill = int(nums[-1])
             continue
             
+        # Check Paid
         if re.search(r'\b(?:Paid|Cash Paid|Received|Advance)\b', l, re.IGNORECASE):
             nums = re.findall(r'\b\d+\b', l)
             if nums:
@@ -1845,6 +1897,7 @@ def parse_receipt_text_lines(raw_lines):
             elif 'upi' in l.lower(): payment_mode = 'UPI'
             continue
             
+        # Check Balance / Udhaar
         if re.search(r'\b(?:Balance|Udhaar|Due|Khata|Baki)\b', l, re.IGNORECASE):
             nums = re.findall(r'\b\d+\b', l)
             if nums:
@@ -1854,23 +1907,65 @@ def parse_receipt_text_lines(raw_lines):
                 due_note = m_note.group(1)
             continue
             
-        m_item = re.match(item_pattern, l, re.IGNORECASE)
-        if m_item:
-            iname = m_item.group(1).strip()
-            iqty = m_item.group(2) or '1'
-            iprice = int(m_item.group(3))
-            if not re.search(r'\b(?:total|paid|balance|due|signed|date|customer|thank|visit|invoice|receipt)\b', iname, re.IGNORECASE):
+        # Try two-dash pattern first
+        m2 = re.match(pat_dash2, l, re.IGNORECASE)
+        if m2:
+            iname = m2.group(1).strip()
+            iqty = m2.group(2).strip()
+            iprice = int(m2.group(3))
+            if not re.search(r'\b(?:total|paid|cash|balance|due|signed|date|customer|thank|visit|invoice|receipt)\b', iname, re.IGNORECASE):
+                items.append({'name': iname.title(), 'qty': iqty, 'price': iprice})
+                continue
+                
+        # Try single-dash pattern
+        m1 = re.match(pat_dash1, l, re.IGNORECASE)
+        if m1:
+            iname = m1.group(1).strip()
+            iqty = m1.group(2) or '1'
+            iprice = int(m1.group(3))
+            if not re.search(r'\b(?:total|paid|cash|balance|due|signed|date|customer|thank|visit|invoice|receipt)\b', iname, re.IGNORECASE):
                 m_sub_qty = re.search(r'(\d+\s*(?:packets?|pkts?|bags?|kg|g|l|ml|pcs?|units?))\b', iname, re.IGNORECASE)
                 if m_sub_qty and iqty == '1':
                     iqty = m_sub_qty.group(1)
                     iname = re.sub(r'\b' + re.escape(m_sub_qty.group(1)) + r'\b', '', iname).strip()
-                items.append({'name': iname, 'qty': iqty.strip(), 'price': iprice})
+                items.append({'name': iname.title(), 'qty': str(iqty).strip(), 'price': iprice})
+                continue
                 
-    if not total_bill and items:
-        total_bill = sum(x['price'] for x in items)
-    if not balance_udhaar and total_bill > amount_paid:
-        balance_udhaar = max(0, total_bill - amount_paid)
+        # Check standalone number (e.g. 1150)
+        if re.match(r'^\s*(\d+)\s*$', l):
+            standalone_numbers.append(int(l.strip()))
+
+    # If customer was not found by prefix, find candidate in top lines
+    if not customer:
+        for cand in merged[:3]:
+            if any(cand.lower().startswith(it['name'].lower()[:4]) for it in items):
+                continue
+            if re.match(r'^\s*\d+\s*$', cand):
+                continue
+            if not re.search(r'\b(?:store|kirana|bill|date|total|rs|cash|paid|balance|invoice|receipt)\b', cand, re.IGNORECASE) and not re.search(r'\d{3,}', cand):
+                customer = cand.strip().title()
+                break
+                
+    if not customer:
+        customer = 'Walk-in Customer'
         
+    # Reconcile total_bill from standalone numbers or items
+    if not total_bill:
+        if items:
+            items_sum = sum(x['price'] for x in items)
+            if items_sum in standalone_numbers:
+                total_bill = items_sum
+            elif standalone_numbers:
+                total_bill = standalone_numbers[0]
+            else:
+                total_bill = items_sum
+        elif standalone_numbers:
+            total_bill = standalone_numbers[0]
+            
+    if not balance_udhaar:
+        if total_bill > amount_paid:
+            balance_udhaar = max(0, total_bill - amount_paid)
+            
     return {
         'store_name': store_name,
         'customer_name': customer,
@@ -1927,9 +2022,10 @@ def analyze_receipt(image_bytes, api_key="", fail_safe=False, file_name=""):
             }
             Return ONLY valid JSON.
             """
+            web_bytes = prepare_display_image(image_bytes) or image_bytes
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
-                contents=[types.Part.from_bytes(data=image_bytes, mime_type='image/png'), prompt]
+                contents=[types.Part.from_bytes(data=web_bytes, mime_type='image/jpeg'), prompt]
             )
             clean_json = response.text.strip().replace("```json", "").replace("```", "")
             parsed = json.loads(clean_json)
@@ -1943,7 +2039,15 @@ def analyze_receipt(image_bytes, api_key="", fail_safe=False, file_name=""):
     if os.path.exists(ocr_binary):
         temp_img_path = None
         try:
-            suffix = ".jpg" if (file_name and file_name.lower().endswith(".jpg")) else ".png"
+            if file_name and file_name.lower().endswith(('.heic', '.heif')):
+                suffix = ".heic"
+            elif file_name and file_name.lower().endswith(('.jpg', '.jpeg')):
+                suffix = ".jpg"
+            elif len(image_bytes) > 12 and (b'ftypheic' in image_bytes[:32] or b'ftypmif1' in image_bytes[:32]):
+                suffix = ".heic"
+            else:
+                suffix = ".png"
+
             with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tf:
                 tf.write(image_bytes)
                 temp_img_path = tf.name
@@ -1952,7 +2056,7 @@ def analyze_receipt(image_bytes, api_key="", fail_safe=False, file_name=""):
             if proc.returncode == 0 and proc.stdout.strip():
                 ocr_lines = [l.strip() for l in proc.stdout.splitlines() if l.strip()]
                 parsed = parse_receipt_text_lines(ocr_lines)
-                if parsed.get("items") or parsed.get("total_bill", 0) > 0 or parsed.get("customer_name") != "Walk-in Customer":
+                if parsed.get("items") or parsed.get("total_bill", 0) > 0 or (parsed.get("customer_name") and parsed.get("customer_name") != "Walk-in Customer"):
                     return parsed
         except Exception as ex:
             print(f"OCR Tool error: {ex}")
@@ -2414,7 +2518,7 @@ def render_mobile_kirana_os():
         
         with st.container(border=True):
             st.caption("Snap a photo of any handwritten or printed store receipt:")
-            m_uploaded_file = st.file_uploader("Upload Store Receipt Photo:", type=["png", "jpg", "jpeg"], key="m_file_up")
+            m_uploaded_file = st.file_uploader("Upload Store Receipt Photo:", type=["png", "jpg", "jpeg", "heic", "heif", "webp"], key="m_file_up")
             
             if st.button("⚡ Test Sample Receipt Photo", key="m_btn_test_receipt", use_container_width=True):
                 sample_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_data", "sample_bill.png")
@@ -2424,9 +2528,10 @@ def render_mobile_kirana_os():
                     st.success("Sample receipt loaded!")
 
             r_bytes = st.session_state.get("m_sample_receipt_bytes") or (m_uploaded_file.getvalue() if m_uploaded_file else None)
+            r_filename = "sample_bill.png" if st.session_state.get("m_sample_receipt_bytes") else (m_uploaded_file.name if m_uploaded_file else "receipt.png")
             if r_bytes:
-                st.image(r_bytes, caption="Uploaded Store Receipt", use_container_width=True)
-                ocr_res = analyze_receipt(r_bytes, api_key="", fail_safe=False)
+                st.image(prepare_display_image(r_bytes), caption="Uploaded Store Receipt", use_container_width=True)
+                ocr_res = analyze_receipt(r_bytes, api_key="", fail_safe=False, file_name=r_filename)
                 
                 cust_disp = ocr_res.get('customer_name') or ocr_res.get('customer', 'Customer')
                 tot_disp = ocr_res.get('total_bill') or ocr_res.get('total_amount', 0)
@@ -3313,7 +3418,7 @@ def render_tab1_vision_receipt():
             if input_source == "📁 Upload Your Own Picture":
                 uploaded_file = st.file_uploader(
                     "Drag and drop or browse receipt image",
-                    type=["png", "jpg", "jpeg", "webp"],
+                    type=["png", "jpg", "jpeg", "heic", "heif", "webp"],
                     help="Works with any smartphone photo of a handwritten bill, dairy note, or receipt."
                 )
                 if uploaded_file is not None:
@@ -3321,11 +3426,11 @@ def render_tab1_vision_receipt():
                     active_filename = uploaded_file.name
                     st.session_state["stored_receipt_bytes"] = image_bytes
                     st.session_state["stored_receipt_name"] = active_filename
-                    st.image(image_bytes, caption=f"📸 Uploaded: {active_filename}", use_container_width=True)
+                    st.image(prepare_display_image(image_bytes), caption=f"📸 Uploaded: {active_filename}", use_container_width=True)
                 elif "stored_receipt_bytes" in st.session_state and st.session_state["stored_receipt_bytes"]:
                     image_bytes = st.session_state["stored_receipt_bytes"]
                     active_filename = st.session_state.get("stored_receipt_name", "uploaded_receipt.png")
-                    st.image(image_bytes, caption=f"📸 Uploaded: {active_filename}", use_container_width=True)
+                    st.image(prepare_display_image(image_bytes), caption=f"📸 Uploaded: {active_filename}", use_container_width=True)
                 else:
                     st.info("👆 Upload any paper receipt photo from your device, or switch to the pre-loaded sample above!")
                     
@@ -3336,18 +3441,18 @@ def render_tab1_vision_receipt():
                     active_filename = "camera_snapshot.jpg"
                     st.session_state["stored_receipt_bytes"] = image_bytes
                     st.session_state["stored_receipt_name"] = active_filename
-                    st.image(image_bytes, caption="📸 Live Camera Snapshot Captured", use_container_width=True)
+                    st.image(prepare_display_image(image_bytes), caption="📸 Live Camera Snapshot Captured", use_container_width=True)
                 elif "stored_receipt_bytes" in st.session_state and st.session_state["stored_receipt_bytes"]:
                     image_bytes = st.session_state["stored_receipt_bytes"]
                     active_filename = st.session_state.get("stored_receipt_name", "camera_snapshot.jpg")
-                    st.image(image_bytes, caption="📸 Live Camera Snapshot Captured", use_container_width=True)
+                    st.image(prepare_display_image(image_bytes), caption="📸 Live Camera Snapshot Captured", use_container_width=True)
                     
             else:
                 active_filename = "sample_bill.png"
                 if os.path.exists(sample_file_path):
                     with open(sample_file_path, "rb") as f:
                         image_bytes = f.read()
-                    st.image(image_bytes, caption="Sample Indian Kirana Handwritten Bill (Indiranagar, Bengaluru)", use_container_width=True)
+                    st.image(prepare_display_image(image_bytes), caption="Sample Indian Kirana Handwritten Bill (Indiranagar, Bengaluru)", use_container_width=True)
                     
             st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
             trigger_btn = st.button("⚡ Run Gemini Multimodal Analysis", type="primary", use_container_width=True)

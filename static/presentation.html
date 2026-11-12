@@ -677,6 +677,22 @@
 
     .wave-bar.active {
       animation: wavePulse 0.8s ease-in-out infinite alternate;
+      animation-delay: calc(var(--i, 1) * 0.05s);
+    }
+
+    .ocr-bounding-row {
+      border: 1px solid transparent;
+      border-radius: 6px;
+      padding: 3px 6px;
+      margin-bottom: 2px;
+      transition: all 0.3s ease;
+    }
+
+    .ocr-bounding-row.highlighted {
+      background: rgba(56, 189, 248, 0.16) !important;
+      border: 1px solid var(--cyan) !important;
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.35);
+      transform: translateX(4px);
     }
 
     @keyframes wavePulse {
@@ -1416,6 +1432,11 @@
   <canvas id="confettiCanvas"></canvas>
   <div class="glass-toast" id="toastMessage">✓ Action Completed</div>
 
+  <!-- Top Illuminated Slide Progress Bar -->
+  <div class="top-progress-bar-container" style="position:fixed; top:0; left:0; width:100%; height:4px; z-index:9999; background:rgba(255,255,255,0.06); pointer-events:none;">
+    <div id="topSlideProgressBar" style="height:100%; width:10%; background:linear-gradient(90deg, #38BDF8, #10B981, #F59E0B, #8B5CF6); box-shadow:0 0 14px #38BDF8; transition:width 0.4s cubic-bezier(0.16,1,0.3,1);"></div>
+  </div>
+
   <!-- Top Glass HUD -->
   <header class="glass-hud-top">
     <div class="hud-brand">
@@ -1534,7 +1555,7 @@
             </div>
 
             <!-- Right Window: Store Crest & Live Stats -->
-            <div class="mock-window floating-iphone-frame" style="max-width:340px; margin:0 auto;>
+            <div class="mock-window floating-iphone-frame" style="max-width:340px; margin:0 auto;">
               <div class="window-header">
                 <div class="traffic-dots"><span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span></div>
                 <span class="window-badge">AUTHENTIC BRAND CREST</span>
@@ -1797,22 +1818,55 @@
             <div class="showcase-window">
               <div class="window-header">
                 <div class="traffic-dots"><span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span></div>
-                <span class="window-badge" style="color:var(--cyan);">LIVE GEMINI VISION OCR</span>
+                <span class="window-badge" style="color:var(--cyan);" id="receiptBadgeHeader">LIVE GEMINI VISION OCR</span>
               </div>
               <div class="window-body">
-                <div class="receipt-scanner-frame">
+                <!-- Receipt Switcher Buttons -->
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                  <button class="tone-toggle-btn active" id="btnReceipt1" onclick="switchReceiptDemo('bill1')">Bill #1 (Store Slip ₹963)</button>
+                  <button class="tone-toggle-btn" id="btnReceipt2" onclick="switchReceiptDemo('bill2')">Bill #2 (Ajay Naidu ₹1,150)</button>
+                </div>
+
+                <div class="receipt-scanner-frame" id="receiptScannerFrame">
                   <div class="laser-scan-line" id="laserScanLine"></div>
-                  <div style="font-family:var(--font-code); font-size:0.76rem; color:var(--text-soft); line-height:1.7;">
-                    <div style="color:var(--amber); font-weight:800; border-bottom:1px dashed var(--border-subtle); padding-bottom:4px; margin-bottom:4px;">
-                      🧾 SRI MANJUNATHA SLIP #1561
+                  
+                  <!-- Bill 1 Container -->
+                  <div id="receiptContent1" style="font-family:var(--font-code); font-size:0.75rem; color:var(--text-soft); line-height:1.65;">
+                    <div style="color:var(--amber); font-weight:800; border-bottom:1px dashed var(--border-subtle); padding-bottom:4px; margin-bottom:6px; display:flex; justify-content:space-between;">
+                      <span>🧾 SLIP #1561: RAMESH ANNA</span>
+                      <span style="font-size:0.65rem; color:var(--cyan); background:rgba(56,189,248,0.15); padding:1px 6px; border-radius:4px;">OFFLINE CACHE</span>
                     </div>
-                    <div>1. Ashirvaad Atta 10kg &nbsp;→ ₹480.00</div>
-                    <div>2. Fortune Sunlite 1L &nbsp;&nbsp;&nbsp;→ ₹145.00</div>
-                    <div>3. Tata Salt 1kg &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ ₹28.00</div>
-                    <div>4. Toor Dal 2kg &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;→ ₹310.00</div>
-                    <div style="color:var(--emerald); font-weight:800; border-top:1px dashed var(--border-subtle); padding-top:4px; margin-top:4px; display:flex; justify-content:space-between;">
-                      <span>CONFIRMED TOTAL:</span>
+                    <div class="ocr-bounding-row">1. Masala Powder &nbsp;→ ₹225.00 <span style="font-size:0.65rem; color:var(--emerald); float:right;">99.4% CONF</span></div>
+                    <div class="ocr-bounding-row">2. Sunflower Oil 1L&nbsp;→ ₹410.00 <span style="font-size:0.65rem; color:var(--emerald); float:right;">98.9% CONF</span></div>
+                    <div class="ocr-bounding-row">3. Toor Dal 2kg &nbsp;&nbsp;&nbsp;→ ₹328.00 <span style="font-size:0.65rem; color:var(--emerald); float:right;">99.6% CONF</span></div>
+                    <div style="color:var(--emerald); font-weight:800; border-top:1px dashed var(--border-subtle); padding-top:4px; margin-top:6px; display:flex; justify-content:space-between;">
+                      <span>TOTAL BILL:</span>
                       <span>₹963.00</span>
+                    </div>
+                    <div style="color:var(--text-muted); font-size:0.68rem; display:flex; justify-content:space-between; margin-top:2px;">
+                      <span>CASH PAID: ₹400.00</span>
+                      <span style="color:var(--rose); font-weight:700;">UDHAAR: ₹563.00</span>
+                    </div>
+                  </div>
+
+                  <!-- Bill 2 Container (Ajay Naidu Real Uploaded Slip) -->
+                  <div id="receiptContent2" style="display:none; font-family:var(--font-code); font-size:0.75rem; color:var(--text-soft); line-height:1.65;">
+                    <div style="color:var(--amber); font-weight:800; border-bottom:1px dashed var(--border-subtle); padding-bottom:4px; margin-bottom:6px; display:flex; justify-content:space-between;">
+                      <span>🧾 REAL SLIP: AJAY NAIDU</span>
+                      <span style="font-size:0.65rem; color:var(--emerald); background:rgba(16,185,129,0.15); padding:1px 6px; border-radius:4px;">HEIC PROCESSED</span>
+                    </div>
+                    <div class="ocr-bounding-row">1. Ashirad atta - 10kg &nbsp;→ ₹950.00 <span style="font-size:0.65rem; color:var(--emerald); float:right;">99.5% CONF</span></div>
+                    <div class="ocr-bounding-row">2. Biscuits - 20 packets → ₹200.00 <span style="font-size:0.65rem; color:var(--emerald); float:right;">99.2% CONF</span></div>
+                    <div style="color:var(--cyan); font-weight:800; border-top:1px dashed var(--border-subtle); padding-top:4px; margin-top:6px; display:flex; justify-content:space-between;">
+                      <span>RECONCILED TOTAL:</span>
+                      <span>₹1,150.00</span>
+                    </div>
+                    <div style="color:var(--text-muted); font-size:0.68rem; display:flex; justify-content:space-between; margin-top:2px;">
+                      <span>CASH PAID: ₹900.00</span>
+                      <span style="color:var(--rose); font-weight:700;">UDHAAR BALANCE: ₹250.00</span>
+                    </div>
+                    <div style="margin-top:4px; background:rgba(16,185,129,0.12); padding:3px 6px; border-radius:4px; font-size:0.66rem; color:var(--emerald); font-weight:700;">
+                      ⚡ AUTO-DEDUCTED: 10kg Atta &amp; 20pk Biscuits
                     </div>
                   </div>
                 </div>
@@ -1865,36 +1919,45 @@
             <div class="showcase-window">
               <div class="window-header">
                 <div class="traffic-dots"><span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span></div>
-                <span class="window-badge" style="color:var(--emerald);">VOICE TRANSCRIBER</span>
+                <span class="window-badge" style="color:var(--emerald);" id="voiceBadge">VOICE TRANSCRIBER</span>
               </div>
               <div class="window-body">
-                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:14px; padding:14px; text-align:center;">
-                  <div style="font-size:0.75rem; color:var(--emerald); font-weight:800; letter-spacing:0.08em; margin-bottom:8px;">
+                <!-- Voice Sample Selector -->
+                <div style="display:flex; gap:6px; margin-bottom:6px;">
+                  <button class="tone-toggle-btn active" id="btnVoiceKannada" onclick="switchVoiceSample('kannada')">Kannada Khata 🎙️</button>
+                  <button class="tone-toggle-btn" id="btnVoiceHinglish" onclick="switchVoiceSample('hinglish')">Hinglish Cash 🗣️</button>
+                </div>
+
+                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.25); border-radius:14px; padding:12px; text-align:center;">
+                  <div style="font-size:0.72rem; color:var(--emerald); font-weight:800; letter-spacing:0.08em; margin-bottom:4px;" id="voiceSampleLabel">
                     AUDIO SAMPLE #01: KANNADA KHATA NOTE
                   </div>
-                  <div style="font-size:1.02rem; font-weight:700; color:var(--text-pure); font-style:italic;">
+                  <div style="font-size:0.96rem; font-weight:700; color:var(--text-pure); font-style:italic;" id="voiceSampleTranscript">
                     "ಪ್ರಥ್ವಿ ಅವರಿಗೆ 45 ರೂಪಾಯಿ ಉದ್ರಿ ಖಾತೆ ಬರೆಯಿರಿ"
                   </div>
-                  <div style="font-size:0.76rem; color:var(--text-muted); margin-top:4px;">
+                  <div style="font-size:0.72rem; color:var(--text-muted); margin-top:3px;" id="voiceSampleMeaning">
                     (Write ₹45 to Prithvi's credit account)
                   </div>
 
-                  <div class="waveform-bars" id="voiceWaveform" style="margin-top:10px;">
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
-                    <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+                  <div class="waveform-bars" id="voiceWaveform" style="margin-top:10px; height:42px;">
+                    <div class="wave-bar" style="--i:1;"></div><div class="wave-bar" style="--i:2;"></div><div class="wave-bar" style="--i:3;"></div>
+                    <div class="wave-bar" style="--i:4;"></div><div class="wave-bar" style="--i:5;"></div><div class="wave-bar" style="--i:6;"></div>
+                    <div class="wave-bar" style="--i:7;"></div><div class="wave-bar" style="--i:8;"></div><div class="wave-bar" style="--i:9;"></div>
+                    <div class="wave-bar" style="--i:10;"></div><div class="wave-bar" style="--i:11;"></div><div class="wave-bar" style="--i:12;"></div>
+                    <div class="wave-bar" style="--i:13;"></div><div class="wave-bar" style="--i:14;"></div><div class="wave-bar" style="--i:15;"></div>
+                    <div class="wave-bar" style="--i:16;"></div><div class="wave-bar" style="--i:17;"></div><div class="wave-bar" style="--i:18;"></div>
+                    <div class="wave-bar" style="--i:19;"></div><div class="wave-bar" style="--i:20;"></div>
                   </div>
                 </div>
 
                 <div style="display:flex; justify-content:space-between; font-size:0.75rem; font-family:var(--font-code); background:var(--cue-bg); padding:8px 12px; border-radius:8px;">
-                  <span>NAME: <b style="color:var(--text-pure);">Prithvi J</b></span>
-                  <span>AMT: <b style="color:var(--emerald);">₹45.00</b></span>
-                  <span>TYPE: <b style="color:var(--rose);">UDHAAR</b></span>
+                  <span>NAME: <b style="color:var(--text-pure);" id="veName">Prithvi J</b></span>
+                  <span>AMT: <b style="color:var(--emerald);" id="veAmt">₹45.00</b></span>
+                  <span>TYPE: <b style="color:var(--rose);" id="veType">UDHAAR</b></span>
                 </div>
 
                 <button class="interactive-btn" onclick="triggerVoicePlayback()">
-                  🎙️ Simulate Speech Recognition & Save
+                  🎙️ Simulate Speech Recognition &amp; Save
                 </button>
               </div>
             </div>
@@ -1941,25 +2004,41 @@
             <div class="showcase-window">
               <div class="window-header">
                 <div class="traffic-dots"><span class="t-dot r"></span><span class="t-dot y"></span><span class="t-dot g"></span></div>
-                <span class="window-badge" style="color:var(--amber);">HEALTH SCORE: 94.2%</span>
+                <span class="window-badge" style="color:var(--amber);" id="doctorHealthBadge">HEALTH SCORE: 94.2%</span>
               </div>
               <div class="window-body">
+                <!-- 7-Day Pulse Timeline Selector -->
+                <div style="display:flex; gap:4px; margin-bottom:8px; justify-content:space-between;">
+                  <button class="tone-toggle-btn" id="btnDayMon" onclick="selectDoctorDay('mon')" style="padding:4px 8px; font-size:0.7rem;">Mon</button>
+                  <button class="tone-toggle-btn" id="btnDayTue" onclick="selectDoctorDay('tue')" style="padding:4px 8px; font-size:0.7rem;">Tue</button>
+                  <button class="tone-toggle-btn" id="btnDayWed" onclick="selectDoctorDay('wed')" style="padding:4px 8px; font-size:0.7rem;">Wed</button>
+                  <button class="tone-toggle-btn" id="btnDayThu" onclick="selectDoctorDay('thu')" style="padding:4px 8px; font-size:0.7rem;">Thu</button>
+                  <button class="tone-toggle-btn" id="btnDayFri" onclick="selectDoctorDay('fri')" style="padding:4px 8px; font-size:0.7rem;">Fri</button>
+                  <button class="tone-toggle-btn active" id="btnDaySat" onclick="selectDoctorDay('sat')" style="padding:4px 8px; font-size:0.7rem;">Sat</button>
+                  <button class="tone-toggle-btn" id="btnDaySun" onclick="selectDoctorDay('sun')" style="padding:4px 8px; font-size:0.7rem;">Sun</button>
+                </div>
+
                 <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                   <div style="background:rgba(16,185,129,0.1); border:1px solid rgba(16,185,129,0.3); border-radius:12px; padding:12px; text-align:center;">
                     <div style="font-size:0.7rem; color:var(--emerald); font-weight:800;">LIQUID CASH PULSE</div>
-                    <div style="font-size:1.4rem; font-weight:900; color:var(--text-pure); font-family:var(--font-code); margin:4px 0;">₹42,850</div>
-                    <div style="font-size:0.68rem; color:var(--text-muted);">In drawer & bank</div>
+                    <div id="doctorCashVal" class="countup-metric" data-target="42850" data-prefix="₹" style="font-size:1.4rem; font-weight:900; color:var(--text-pure); font-family:var(--font-code); margin:4px 0;">₹42,850</div>
+                    <div style="font-size:0.68rem; color:var(--text-muted);" id="doctorCashSub">In drawer &amp; bank</div>
                   </div>
                   <div style="background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.3); border-radius:12px; padding:12px; text-align:center;">
                     <div style="font-size:0.7rem; color:var(--rose); font-weight:800;">PENDING UDHAAR</div>
-                    <div style="font-size:1.4rem; font-weight:900; color:var(--text-pure); font-family:var(--font-code); margin:4px 0;">₹3,545</div>
-                    <div style="font-size:0.68rem; color:var(--text-muted);">Across 2 defaulters</div>
+                    <div id="doctorUdhaarVal" class="countup-metric" data-target="3795" data-prefix="₹" style="font-size:1.4rem; font-weight:900; color:var(--text-pure); font-family:var(--font-code); margin:4px 0;">₹3,795</div>
+                    <div style="font-size:0.68rem; color:var(--text-muted);" id="doctorDefaultersSub">Across 3 defaulters</div>
                   </div>
                 </div>
 
-                <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:12px; padding:10px 14px; font-size:0.78rem;">
-                  <div style="font-weight:800; color:var(--amber); margin-bottom:4px;">🚨 WATCHDOG ALERT:</div>
-                  <div style="color:var(--text-pure); line-height:1.4;">Prithvi J owes <b>₹3,500</b> (7 days pending). Suresh Gowda owes <b>₹45</b>. Send Gentle Nudge now?</div>
+                <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:12px; padding:10px 14px; font-size:0.78rem; margin-top:8px;">
+                  <div style="font-weight:800; color:var(--amber); margin-bottom:4px;">🚨 WATCHDOG RADAR ALERT:</div>
+                  <div id="doctorAlertText" style="color:var(--text-pure); line-height:1.4;">Prithvi J owes <b>₹3,500</b> (7 days pending). Ajay Naidu owes <b>₹250</b> (HEIC slip). Suresh Gowda owes <b>₹45</b>. Send Gentle Nudge now?</div>
+                </div>
+
+                <div style="display:flex; justify-content:space-between; align-items:center; background:rgba(16,185,129,0.12); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:8px 12px; margin-top:8px;">
+                  <span style="font-size:0.75rem; color:var(--emerald); font-weight:800;">💡 Restock Guidance:</span>
+                  <span style="font-size:0.75rem; color:var(--text-pure);" id="doctorRestockText">ITC delivery Friday: Collect ₹8,500 by Thursday</span>
                 </div>
               </div>
             </div>
@@ -2080,8 +2159,9 @@
               </div>
               <div class="window-body">
                 <!-- Customer Quick Picker -->
-                <div style="display:flex; gap:6px;">
+                <div style="display:flex; gap:6px; flex-wrap:wrap;">
                   <button class="tone-toggle-btn active" id="btnCustPrithvi" onclick="selectDemoCustomer('prithvi')">Prithvi J (₹3.5k)</button>
+                  <button class="tone-toggle-btn" id="btnCustAjay" onclick="selectDemoCustomer('ajay')">Ajay Naidu (₹250)</button>
                   <button class="tone-toggle-btn" id="btnCustSuresh" onclick="selectDemoCustomer('suresh')">Suresh (₹45)</button>
                   <button class="tone-toggle-btn" id="btnCustAnand" onclick="selectDemoCustomer('anand')">Anand (₹0)</button>
                 </div>
@@ -2101,12 +2181,21 @@
                   </div>
                 </div>
 
-                <!-- Stock Steppers Demo -->
-                <div style="display:flex; justify-content:space-between; align-items:center; background:var(--cue-bg); padding:8px 12px; border-radius:8px;">
-                  <span style="font-size:0.76rem; font-weight:700;">Ashirvaad Atta: <b id="stockAtta" style="color:var(--emerald);">14 bags</b></span>
-                  <div style="display:flex; gap:6px;">
-                    <button style="background:var(--border-subtle); border:none; color:var(--text-pure); width:26px; height:26px; border-radius:6px; cursor:pointer;" onclick="decrementStock('Atta')">-</button>
-                    <button style="background:var(--border-subtle); border:none; color:var(--text-pure); width:26px; height:26px; border-radius:6px; cursor:pointer;" onclick="incrementStock('Atta')">+</button>
+                <!-- Live Inventory Dual Steppers Demo -->
+                <div style="display:flex; flex-direction:column; gap:6px;">
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:var(--cue-bg); padding:6px 12px; border-radius:8px;">
+                    <span style="font-size:0.76rem; font-weight:700;">Aashirvaad Atta: <b id="stockAtta" style="color:var(--emerald);">36 bags</b></span>
+                    <div style="display:flex; gap:6px;">
+                      <button style="background:var(--border-subtle); border:none; color:var(--text-pure); width:26px; height:26px; border-radius:6px; cursor:pointer;" onclick="decrementStock('Atta')">-</button>
+                      <button style="background:var(--border-subtle); border:none; color:var(--text-pure); width:26px; height:26px; border-radius:6px; cursor:pointer;" onclick="incrementStock('Atta')">+</button>
+                    </div>
+                  </div>
+                  <div style="display:flex; justify-content:space-between; align-items:center; background:var(--cue-bg); padding:6px 12px; border-radius:8px;">
+                    <span style="font-size:0.76rem; font-weight:700;">Parle-G Biscuits: <b id="stockBiscuits" style="color:var(--amber);">25 pkts</b></span>
+                    <div style="display:flex; gap:6px;">
+                      <button style="background:var(--border-subtle); border:none; color:var(--text-pure); width:26px; height:26px; border-radius:6px; cursor:pointer;" onclick="decrementStock('Biscuits')">-</button>
+                      <button style="background:var(--border-subtle); border:none; color:var(--text-pure); width:26px; height:26px; border-radius:6px; cursor:pointer;" onclick="incrementStock('Biscuits')">+</button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -2362,10 +2451,35 @@
       activeSlideIndex = newIdx;
       slideCounterText.textContent = `${activeSlideIndex + 1} / ${slides.length}`;
 
+      // Update Top Illuminated Progress Bar
+      const topBar = document.getElementById('topSlideProgressBar');
+      if (topBar) {
+        topBar.style.width = `${((activeSlideIndex + 1) / slides.length) * 100}%`;
+      }
+
       // Update Notes
       const notes = slides[activeSlideIndex].getAttribute('data-notes') || 'No notes available.';
       notesDynamicText.textContent = notes;
+
+      // Animate Active Slide Metrics
+      if (typeof animateSlideMetrics === 'function') {
+        animateSlideMetrics(slides[activeSlideIndex]);
+      }
+
+      // Auto-trigger celebratory confetti on final victory slide
+      if (activeSlideIndex === slides.length - 1) {
+        setTimeout(() => {
+          if (typeof fireVictoryConfetti === 'function') fireVictoryConfetti();
+        }, 350);
+      }
     }
+
+    const goToSlide = navigateToSlide;
+    window.goToSlide = navigateToSlide;
+
+    // Initialize Top Progress Bar
+    const topBar = document.getElementById('topSlideProgressBar');
+    if (topBar) topBar.style.width = `${(1 / slides.length) * 100}%`;
 
     function nextSlide() {
       if (activeSlideIndex < slides.length - 1) {
@@ -2384,6 +2498,7 @@
 
     // Keyboard Shortcuts
     window.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
       if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
         e.preventDefault();
         nextSlide();
@@ -2394,10 +2509,16 @@
         toggleFullscreenMode();
       } else if (e.key === 's' || e.key === 'S') {
         toggleNotesDrawer();
+      } else if (e.key === 'p' || e.key === 'P') {
+        toggleSpotlight();
+      } else if (e.key === 'l' || e.key === 'L') {
+        toggleLaserPointer();
       } else if (e.key === 'g' || e.key === 'G') {
         toggleSlideSorter();
       } else if (e.key === 'c' || e.key === 'C') {
-        triggerCelebrationConfetti();
+        fireVictoryConfetti();
+      } else if (e.key === 'm' || e.key === 'M') {
+        toggleAudio();
       } else if (e.key === 'Escape') {
         toggleSlideSorter(false);
         if (notesOverlay.style.display === 'flex') toggleNotesDrawer();
@@ -2484,62 +2605,6 @@
       });
     });
 
-    // Celebration Confetti Cannon
-    const confettiCanvas = document.getElementById('confettiCanvas');
-    const confettiCtx = confettiCanvas.getContext('2d');
-    let confettiParticles = [];
-
-    function resizeConfettiCanvas() {
-      confettiCanvas.width = window.innerWidth;
-      confettiCanvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeConfettiCanvas);
-    resizeConfettiCanvas();
-
-    function triggerCelebrationConfetti() {
-      playBellChime();
-      showToast('🎉 Celebration Mode Active!');
-      const colors = ['#38BDF8', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#FFFFFF'];
-      for (let i = 0; i < 110; i++) {
-        confettiParticles.push({
-          x: window.innerWidth / 2,
-          y: window.innerHeight / 2,
-          vx: (Math.random() - 0.5) * 16,
-          vy: (Math.random() - 0.5) * 16 - 4,
-          size: Math.random() * 7 + 4,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          rotation: Math.random() * 360,
-          rotSpeed: (Math.random() - 0.5) * 12,
-          alpha: 1
-        });
-      }
-      runConfettiLoop();
-    }
-
-    function runConfettiLoop() {
-      confettiCtx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-      confettiParticles.forEach(p => {
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += 0.22;
-        p.rotation += p.rotSpeed;
-        p.alpha -= 0.012;
-
-        confettiCtx.save();
-        confettiCtx.translate(p.x, p.y);
-        confettiCtx.rotate((p.rotation * Math.PI) / 180);
-        confettiCtx.fillStyle = p.color;
-        confettiCtx.globalAlpha = Math.max(0, p.alpha);
-        confettiCtx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size);
-        confettiCtx.restore();
-      });
-
-      confettiParticles = confettiParticles.filter(p => p.alpha > 0);
-      if (confettiParticles.length > 0) {
-        requestAnimationFrame(runConfettiLoop);
-      }
-    }
-
     // Dynamic Spec Switcher on Slide 2
     function switchSpecTab(tab) {
       playWhoosh();
@@ -2621,7 +2686,31 @@
     // Initialize Slide 2 Default Tab
     switchSpecTab('google');
 
-    // Interactive Demo Functions
+    // Interactive Demo Functions: Vision OCR
+    function switchReceiptDemo(mode) {
+      playWhoosh();
+      const b1 = document.getElementById('btnReceipt1');
+      const b2 = document.getElementById('btnReceipt2');
+      const c1 = document.getElementById('receiptContent1');
+      const c2 = document.getElementById('receiptContent2');
+      const badge = document.getElementById('receiptBadgeHeader');
+
+      if (b1) b1.classList.toggle('active', mode === 'bill1');
+      if (b2) b2.classList.toggle('active', mode === 'bill2');
+
+      if (mode === 'bill1') {
+        if (c1) c1.style.display = 'block';
+        if (c2) c2.style.display = 'none';
+        if (badge) badge.textContent = 'LIVE GEMINI VISION OCR';
+        showToast('✓ Loaded Store Bill #1 (₹963.00)');
+      } else {
+        if (c1) c1.style.display = 'none';
+        if (c2) c2.style.display = 'block';
+        if (badge) badge.textContent = 'HEIC MULTIMODAL OCR';
+        showToast('✓ Loaded Real Kirana Slip: Ajay Naidu (₹1,150.00)');
+      }
+    }
+
     function triggerLaserScan() {
       playLaserSweep();
       const line = document.getElementById('laserScanLine');
@@ -2629,10 +2718,60 @@
         line.classList.remove('scanning');
         void line.offsetWidth;
         line.classList.add('scanning');
+      }
+
+      // Sequentially highlight OCR bounding rows
+      const rows = document.querySelectorAll('.ocr-bounding-row');
+      rows.forEach(r => r.classList.remove('highlighted'));
+      rows.forEach((r, idx) => {
         setTimeout(() => {
-          playBellChime();
-          showToast('✓ Gemini Vision OCR: ₹963 Bill Parsed');
-        }, 1200);
+          r.classList.add('highlighted');
+        }, 250 + idx * 280);
+      });
+
+      setTimeout(() => {
+        playBellChime();
+        showToast('✓ Gemini Vision OCR: Items Extracted & Stock Auto-Deducted');
+      }, 1300);
+    }
+
+    // Voice Khata Switcher
+    function switchVoiceSample(sample) {
+      playWhoosh();
+      const bK = document.getElementById('btnVoiceKannada');
+      const bH = document.getElementById('btnVoiceHinglish');
+      const lbl = document.getElementById('voiceSampleLabel');
+      const tr = document.getElementById('voiceSampleTranscript');
+      const mn = document.getElementById('voiceSampleMeaning');
+      const n = document.getElementById('veName');
+      const a = document.getElementById('veAmt');
+      const t = document.getElementById('veType');
+
+      if (bK) bK.classList.toggle('active', sample === 'kannada');
+      if (bH) bH.classList.toggle('active', sample === 'hinglish');
+
+      if (sample === 'kannada') {
+        if (lbl) lbl.textContent = 'AUDIO SAMPLE #01: KANNADA KHATA NOTE';
+        if (tr) tr.textContent = '"ಪ್ರಥ್ವಿ ಅವರಿಗೆ 45 ರೂಪಾಯಿ ಉದ್ರಿ ಖಾತೆ ಬರೆಯಿರಿ"';
+        if (mn) mn.textContent = '(Write ₹45 to Prithvi\'s credit account)';
+        if (n) n.textContent = 'Prithvi J';
+        if (a) a.textContent = '₹45.00';
+        if (t) {
+          t.textContent = 'UDHAAR';
+          t.style.color = 'var(--rose)';
+        }
+        showToast('✓ Voice Sample: Spoken Kannada Dialect');
+      } else {
+        if (lbl) lbl.textContent = 'AUDIO SAMPLE #02: HINGLISH FAST CASH BILL';
+        if (tr) tr.textContent = '"Suresh ko 2 packet biscuit do, do sau rupaye cash mila"';
+        if (mn) mn.textContent = '(Give Suresh 2 biscuit pkts, ₹200 cash received)';
+        if (n) n.textContent = 'Suresh Gowda';
+        if (a) a.textContent = '₹200.00';
+        if (t) {
+          t.textContent = 'CASH SALE';
+          t.style.color = 'var(--emerald)';
+        }
+        showToast('✓ Voice Sample: Hinglish Fast Cash Sale');
       }
     }
 
@@ -2642,10 +2781,45 @@
       bars.forEach(b => b.classList.add('active'));
       setTimeout(() => {
         bars.forEach(b => b.classList.remove('active'));
-        showToast('✓ Audio Transcribed & ₹45 Udhaar Created');
-      }, 2400);
+        playBellChime();
+        showToast('✓ Vernacular Speech AI: Transcribed & Saved to Ledger');
+      }, 2200);
     }
 
+    // Cash Flow Doctor 7-Day Pulse Selector
+    const doctorDayData = {
+      mon: { cash: 38200, udhaar: 5120, def: 'Across 4 defaulters', alert: 'ITC restock payment of ₹12,000 due this Friday. Urgent collection recommended.', restock: 'ITC delivery Friday: Collect ₹8,500 by Thursday' },
+      tue: { cash: 39450, udhaar: 4890, def: 'Across 4 defaulters', alert: 'Suresh paid ₹200 cash. Prithvi J still owes ₹3,500.', restock: 'Ensure drawer cash stays above ₹35,000.' },
+      wed: { cash: 40100, udhaar: 4650, def: 'Across 3 defaulters', alert: 'Gentle reminder sent to Anand Kumar. Received ₹800 UPI.', restock: 'Wholesale delivery arriving tomorrow.' },
+      thu: { cash: 41300, udhaar: 4100, def: 'Across 3 defaulters', alert: 'Wholesale delivery tomorrow. Collect ₹8,500 from top debtors today.', restock: 'ITC delivery tomorrow morning.' },
+      fri: { cash: 36500, udhaar: 3950, def: 'Across 3 defaulters', alert: 'Paid ITC supplier ₹12,000. Cash drawer stabilized at ₹36.5k.', restock: 'Supplier bill settled in full.' },
+      sat: { cash: 42850, udhaar: 3795, def: 'Across 3 defaulters', alert: 'Prithvi J owes ₹3,500 (7 days pending). Ajay Naidu owes ₹250 (HEIC slip). Suresh Gowda owes ₹45.', restock: 'ITC delivery Friday: Collect ₹8,500 by Thursday' },
+      sun: { cash: 44600, udhaar: 3400, def: 'Across 2 defaulters', alert: 'Weekend sales surge (+18%). Weekly profit health score: 96.4%.', restock: 'Stock restocked for Monday opening.' }
+    };
+
+    function selectDoctorDay(day) {
+      playWhoosh();
+      ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'].forEach(d => {
+        const btn = document.getElementById(`btnDay${d.charAt(0).toUpperCase() + d.slice(1)}`);
+        if (btn) btn.classList.toggle('active', d === day);
+      });
+
+      const d = doctorDayData[day] || doctorDayData.sat;
+      const cashEl = document.getElementById('doctorCashVal');
+      const udhaarEl = document.getElementById('doctorUdhaarVal');
+      const defSub = document.getElementById('doctorDefaultersSub');
+      const alertEl = document.getElementById('doctorAlertText');
+      const restockEl = document.getElementById('doctorRestockText');
+
+      if (cashEl) animateMetric(cashEl, d.cash, '₹');
+      if (udhaarEl) animateMetric(udhaarEl, d.udhaar, '₹');
+      if (defSub) defSub.textContent = d.def;
+      if (alertEl) alertEl.innerHTML = d.alert;
+      if (restockEl) restockEl.innerHTML = d.restock;
+      showToast(`✓ Cash Flow Doctor: ${day.toUpperCase()} Radar Loaded`);
+    }
+
+    // Cultural WhatsApp Recovery Tones
     function switchTone(tone) {
       playWhoosh();
       const bGentle = document.getElementById('btnToneGentle');
@@ -2664,7 +2838,7 @@
         } else {
           el.innerHTML = '<b>Attention Prithvi J</b><br>This is an automated statement from Sri Manjunatha Provision Store. Your credit balance of <b>₹3,500</b> is now 7 days overdue. Please clear today via UPI.';
         }
-        showToast(`✓ Tone Switched to ${tone.toUpperCase()}`);
+        showToast(`✓ WhatsApp Tone: ${tone.toUpperCase()}`);
       }
     }
 
@@ -2684,22 +2858,41 @@
       showToast('✓ Copied Live URL to Clipboard!');
     }
 
-    // Stock Stepper Simulation
-    let stockAtta = 14;
+    // Live Inventory Dual Steppers Simulation
+    let stockAtta = 36;
+    let stockBiscuits = 25;
+
     function decrementStock(item) {
       playWhoosh();
-      if (stockAtta > 0) stockAtta--;
-      document.getElementById('stockAtta').textContent = `${stockAtta} bags`;
-      showToast(`Stock updated: ${item} decremented`);
-    }
-    function incrementStock(item) {
-      playBellChime();
-      stockAtta++;
-      document.getElementById('stockAtta').textContent = `${stockAtta} bags`;
-      showToast(`Stock updated: ${item} added`);
+      if (item === 'Atta') {
+        if (stockAtta > 0) stockAtta--;
+        const el = document.getElementById('stockAtta');
+        if (el) el.textContent = `${stockAtta} bags`;
+        showToast(`Stock updated: Ashirvaad Atta → ${stockAtta} bags`);
+      } else {
+        if (stockBiscuits > 0) stockBiscuits--;
+        const el = document.getElementById('stockBiscuits');
+        if (el) el.textContent = `${stockBiscuits} pkts`;
+        showToast(`Stock updated: Parle-G Biscuits → ${stockBiscuits} pkts`);
+      }
     }
 
-    // Autocomplete Demo Customer Switcher
+    function incrementStock(item) {
+      playBellChime();
+      if (item === 'Atta') {
+        stockAtta++;
+        const el = document.getElementById('stockAtta');
+        if (el) el.textContent = `${stockAtta} bags`;
+        showToast(`Stock updated: Ashirvaad Atta → ${stockAtta} bags`);
+      } else {
+        stockBiscuits++;
+        const el = document.getElementById('stockBiscuits');
+        if (el) el.textContent = `${stockBiscuits} pkts`;
+        showToast(`Stock updated: Parle-G Biscuits → ${stockBiscuits} pkts`);
+      }
+    }
+
+    // Autocomplete Customer Simulator
     function selectDemoCustomer(name) {
       playBellChime();
       const n = document.getElementById('afName');
@@ -2708,12 +2901,14 @@
       const cid = document.getElementById('afCid');
       const sl = document.getElementById('afSl');
       const btnP = document.getElementById('btnCustPrithvi');
+      const btnA = document.getElementById('btnCustAjay');
       const btnS = document.getElementById('btnCustSuresh');
-      const btnA = document.getElementById('btnCustAnand');
+      const btnAn = document.getElementById('btnCustAnand');
 
       if (btnP) btnP.classList.toggle('active', name === 'prithvi');
+      if (btnA) btnA.classList.toggle('active', name === 'ajay');
       if (btnS) btnS.classList.toggle('active', name === 'suresh');
-      if (btnA) btnA.classList.toggle('active', name === 'anand');
+      if (btnAn) btnAn.classList.toggle('active', name === 'anand');
 
       if (!n || !b || !c || !cid || !sl) return;
 
@@ -2725,6 +2920,14 @@
         cid.textContent = 'CID: CID-0516';
         sl.textContent = 'Sl: SL-1561';
         showToast('✓ Loaded: Prithvi J (₹3,500 Due)');
+      } else if (name === 'ajay') {
+        n.textContent = 'Ajay Naidu';
+        b.textContent = '⚠️ ₹250 ACTIVE UDHAAR';
+        b.style.background = 'var(--rose)';
+        c.innerHTML = '📞 <b>+91 94480 33221</b> • 📧 <b>ajay.naidu@gmail.com</b>';
+        cid.textContent = 'CID: CID-0982';
+        sl.textContent = 'Sl: SL-1562 (HEIC Slip)';
+        showToast('✓ Loaded: Ajay Naidu (₹250 Due from Real Slip)');
       } else if (name === 'suresh') {
         n.textContent = 'Suresh Gowda';
         b.textContent = '⚠️ ₹45 ACTIVE UDHAAR';
@@ -2743,10 +2946,43 @@
         showToast('✓ Loaded: Anand Kumar (Zero Debt)');
       }
     }
-  
-    // ====== 1. CELESTIAL CONSTELLATION INTERACTIVE CANVAS ======
+
+    // Number Count-Up Animation Engine
+    function animateMetric(el, target, prefix = '', suffix = '') {
+      if (!el) return;
+      const start = 0;
+      const duration = 650;
+      const startTime = performance.now();
+
+      function update(now) {
+        const elapsed = now - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        const easeProgress = 1 - Math.pow(1 - progress, 3);
+        const current = Math.floor(start + (target - start) * easeProgress);
+        el.textContent = `${prefix}${current.toLocaleString()}${suffix}`;
+        if (progress < 1) {
+          requestAnimationFrame(update);
+        } else {
+          el.textContent = `${prefix}${target.toLocaleString()}${suffix}`;
+        }
+      }
+      requestAnimationFrame(update);
+    }
+
+    function animateSlideMetrics(slideEl) {
+      if (!slideEl) return;
+      const metrics = slideEl.querySelectorAll('.countup-metric');
+      metrics.forEach(m => {
+        const target = parseFloat(m.getAttribute('data-target') || '0');
+        const prefix = m.getAttribute('data-prefix') || '';
+        const suffix = m.getAttribute('data-suffix') || '';
+        if (target > 0) animateMetric(m, target, prefix, suffix);
+      });
+    }
+
+    // 1. Celestial Constellation Background Canvas
     const celestialCanvas = document.getElementById('celestialCanvas');
-    const ctx = celestialCanvas ? celestialCanvas.getContext('2d') : null;
+    const celestialCtx = celestialCanvas ? celestialCanvas.getContext('2d') : null;
     let stars = [];
     let mouseX = -1000, mouseY = -1000;
 
@@ -2762,19 +2998,18 @@
       const numStars = Math.floor((window.innerWidth * window.innerHeight) / 16000);
       for (let i = 0; i < numStars; i++) {
         stars.push({
-          x: Math.random() * celestialCanvas.width,
-          y: Math.random() * celestialCanvas.height,
+          x: Math.random() * (celestialCanvas ? celestialCanvas.width : 1000),
+          y: Math.random() * (celestialCanvas ? celestialCanvas.height : 800),
           vx: (Math.random() - 0.5) * 0.45,
           vy: (Math.random() - 0.5) * 0.45,
-          radius: Math.random() * 1.8 + 0.6,
-          hue: Math.random() > 0.5 ? 'cyan' : 'emerald'
+          radius: Math.random() * 1.8 + 0.6
         });
       }
     }
 
     function renderCelestial() {
-      if (!ctx || !celestialCanvas) return;
-      ctx.clearRect(0, 0, celestialCanvas.width, celestialCanvas.height);
+      if (!celestialCtx || !celestialCanvas) return;
+      celestialCtx.clearRect(0, 0, celestialCanvas.width, celestialCanvas.height);
       const isLight = document.body.classList.contains('light-mode');
       const starColor = isLight ? 'rgba(2, 132, 199, 0.4)' : 'rgba(56, 189, 248, 0.7)';
       const lineColor = isLight ? 'rgba(2, 132, 199, ' : 'rgba(56, 189, 248, ';
@@ -2788,7 +3023,6 @@
         if (s.y < 0) s.y = celestialCanvas.height;
         if (s.y > celestialCanvas.height) s.y = 0;
 
-        // Subtle mouse repulsion
         const dx = s.x - mouseX;
         const dy = s.y - mouseY;
         const dist = Math.sqrt(dx * dx + dy * dy);
@@ -2797,22 +3031,21 @@
           s.y += (dy / dist) * 1.2;
         }
 
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
-        ctx.fillStyle = starColor;
-        ctx.fill();
+        celestialCtx.beginPath();
+        celestialCtx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
+        celestialCtx.fillStyle = starColor;
+        celestialCtx.fill();
 
-        // Connect nearby stars
         for (let j = i + 1; j < stars.length; j++) {
           const s2 = stars[j];
           const dist2 = Math.hypot(s.x - s2.x, s.y - s2.y);
           if (dist2 < 110) {
-            ctx.beginPath();
-            ctx.moveTo(s.x, s.y);
-            ctx.lineTo(s2.x, s2.y);
-            ctx.strokeStyle = lineColor + (1 - dist2 / 110) * 0.16 + ')';
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
+            celestialCtx.beginPath();
+            celestialCtx.moveTo(s.x, s.y);
+            celestialCtx.lineTo(s2.x, s2.y);
+            celestialCtx.strokeStyle = lineColor + (1 - dist2 / 110) * 0.16 + ')';
+            celestialCtx.lineWidth = 0.8;
+            celestialCtx.stroke();
           }
         }
       }
@@ -2829,7 +3062,7 @@
     resizeCelestial();
     requestAnimationFrame(renderCelestial);
 
-    // ====== 2. FULL-SCREEN PHYSICS CONFETTI CANNON ======
+    // 2. Full-Screen Physics Confetti Cannon
     const confettiCanvas = document.getElementById('confettiCanvas');
     const cctx = confettiCanvas ? confettiCanvas.getContext('2d') : null;
     let confettiParticles = [];
@@ -2868,332 +3101,10 @@
       }
     }
 
-    function renderConfetti() {
-      if (!cctx || !confettiCanvas) return;
-      cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-      for (let i = confettiParticles.length - 1; i >= 0; i--) {
-        const p = confettiParticles[i];
-        p.x += p.vx;
-        p.vy += p.gravity;
-        p.y += p.vy;
-        p.rotation += p.rotSpeed;
-        p.opacity -= 0.005;
-
-        if (p.opacity <= 0 || p.y > confettiCanvas.height) {
-          confettiParticles.splice(i, 1);
-          continue;
-        }
-
-        cctx.save();
-        cctx.translate(p.x, p.y);
-        cctx.rotate((p.rotation * Math.PI) / 180);
-        cctx.fillStyle = p.color;
-        cctx.globalAlpha = Math.max(0, p.opacity);
-        cctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.6);
-        cctx.restore();
-      }
-
-      if (confettiParticles.length > 0) {
-        requestAnimationFrame(renderConfetti);
-      } else {
-        isConfettiActive = false;
-        cctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
-      }
-    }
-
-    // ====== 3. PRESENTATION LASER POINTER & SPOTLIGHT ======
-    let isLaserActive = false;
-    let isSpotlightActive = false;
-    const laserDot = document.getElementById('laserDot');
-    const spotlightOverlay = document.getElementById('spotlightOverlay');
-
-    function toggleLaserPointer() {
-      isLaserActive = !isLaserActive;
-      playBellChime();
-      if (laserDot) {
-        laserDot.style.display = isLaserActive ? 'block' : 'none';
-      }
-      const btn = document.getElementById('btnLaserToggle');
-      if (btn) btn.classList.toggle('active', isLaserActive);
-      showToast(isLaserActive ? '🔴 Laser Pointer Active [L]' : 'Laser Pointer Off');
-    }
-
-    function updateLaserDot(e) {
-      if (isLaserActive && laserDot) {
-        laserDot.style.left = e.clientX + 'px';
-        laserDot.style.top = e.clientY + 'px';
-      }
-    }
-
-    function toggleSpotlight() {
-      isSpotlightActive = !isSpotlightActive;
-      playBellChime();
-      if (spotlightOverlay) {
-        spotlightOverlay.classList.toggle('active', isSpotlightActive);
-      }
-      const btn = document.getElementById('btnSpotlightToggle');
-      if (btn) btn.classList.toggle('active', isSpotlightActive);
-      showToast(isSpotlightActive ? '🔦 Spotlight Active [S]' : 'Spotlight Off');
-    }
-
-    function updateSpotlight(e) {
-      if (isSpotlightActive && spotlightOverlay) {
-        spotlightOverlay.style.background = `radial-gradient(circle 200px at ${e.clientX}px ${e.clientY}px, transparent 0%, rgba(0,0,0,0.85) 100%)`;
-      }
-    }
-
-    // ====== 4. OFFLINE WEB AUDIO API SYNTHESIZER ======
-    let isAudioMuted = false;
-    let audioCtx = null;
-
-    function getAudioCtx() {
-      if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) audioCtx = new AudioContext();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      return audioCtx;
-    }
-
-    function toggleAudio() {
-      isAudioMuted = !isAudioMuted;
-      const btn = document.getElementById('btnSoundToggle');
-      if (btn) {
-        btn.textContent = isAudioMuted ? '🔇 Muted' : '🔊 Audio';
-        btn.classList.toggle('active', !isAudioMuted);
-      }
-      showToast(isAudioMuted ? '🔇 Audio Muted' : '🔊 Audio Enabled');
-    }
-
-    function playWhoosh() {
-      if (isAudioMuted) return;
-      try {
-        const ctx = getAudioCtx();
-        if (!ctx) return;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(420, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.18);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.18);
-      } catch(e) {}
-    }
-
-    function playBellChime() {
-      if (isAudioMuted) return;
-      try {
-        const ctx = getAudioCtx();
-        if (!ctx) return;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      } catch(e) {}
-    }
-
-    function playFanfare() {
-      if (isAudioMuted) return;
-      try {
-        const ctx = getAudioCtx();
-        if (!ctx) return;
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
-        notes.forEach((freq, idx) => {
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(freq, ctx.currentTime + idx * 0.08);
-          gain.gain.setValueAtTime(0.12, ctx.currentTime + idx * 0.08);
-          gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.4);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(ctx.currentTime + idx * 0.08);
-          osc.stop(ctx.currentTime + idx * 0.08 + 0.4);
-        });
-      } catch(e) {}
-    }
-
-    // ====== 5. 3D CARD HOVER TILT WITH SPECULAR SHINE ======
-    function initCardTilt() {
-      const tiltCards = document.querySelectorAll('.slide-3d-card, .cue-card, .mock-window');
-      tiltCards.forEach(card => {
-        card.addEventListener('mousemove', e => {
-          const rect = card.getBoundingClientRect();
-          const x = e.clientX - rect.left;
-          const y = e.clientY - rect.top;
-          const centerX = rect.width / 2;
-          const centerY = rect.height / 2;
-          const rotX = ((y - centerY) / centerY) * -6;
-          const rotY = ((x - centerX) / centerX) * 6;
-          card.style.transform = `perspective(1000px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) scale3d(1.01, 1.01, 1.01)`;
-        });
-        card.addEventListener('mouseleave', () => {
-          card.style.transform = 'perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)';
-        });
-      });
-    }
-    setTimeout(initCardTilt, 500);
-
-    // Auto-fire celebratory confetti on reaching Slide 10
-    const originalGoToSlide = goToSlide;
-    goToSlide = function(idx) {
-      originalGoToSlide(idx);
-      if (idx === 10) {
-        setTimeout(fireVictoryConfetti, 400);
-      }
-    };
-
-    // Hotkeys: [L] Laser, [S] Spotlight, [C] Confetti, [M] Mute
-    window.addEventListener('keydown', e => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (e.key === 'l' || e.key === 'L') {
-        toggleLaserPointer();
-      } else if (e.key === 's' || e.key === 'S') {
-        toggleSpotlight();
-      } else if (e.key === 'c' || e.key === 'C') {
-        fireVictoryConfetti();
-      } else if (e.key === 'm' || e.key === 'M') {
-        toggleAudio();
-      }
-    });
-
-
-    // ====== 1. CELESTIAL CONSTELLATION INTERACTIVE CANVAS ======
-    const celestialCanvas = document.getElementById('celestialCanvas');
-    const ctx = celestialCanvas ? celestialCanvas.getContext('2d') : null;
-    let stars = [];
-    let mouseX = -1000, mouseY = -1000;
-
-    function resizeCelestial() {
-      if (!celestialCanvas) return;
-      celestialCanvas.width = window.innerWidth;
-      celestialCanvas.height = window.innerHeight;
-      initStars();
-    }
-
-    function initStars() {
-      stars = [];
-      const numStars = Math.floor((window.innerWidth * window.innerHeight) / 16000);
-      for (let i = 0; i < numStars; i++) {
-        stars.push({
-          x: Math.random() * celestialCanvas.width,
-          y: Math.random() * celestialCanvas.height,
-          vx: (Math.random() - 0.5) * 0.45,
-          vy: (Math.random() - 0.5) * 0.45,
-          radius: Math.random() * 1.8 + 0.6,
-          hue: Math.random() > 0.5 ? 'cyan' : 'emerald'
-        });
-      }
-    }
-
-    function renderCelestial() {
-      if (!ctx || !celestialCanvas) return;
-      ctx.clearRect(0, 0, celestialCanvas.width, celestialCanvas.height);
-      const isLight = document.body.classList.contains('light-mode');
-      const starColor = isLight ? 'rgba(2, 132, 199, 0.4)' : 'rgba(56, 189, 248, 0.7)';
-      const lineColor = isLight ? 'rgba(2, 132, 199, ' : 'rgba(56, 189, 248, ';
-
-      for (let i = 0; i < stars.length; i++) {
-        const s = stars[i];
-        s.x += s.vx;
-        s.y += s.vy;
-        if (s.x < 0) s.x = celestialCanvas.width;
-        if (s.x > celestialCanvas.width) s.x = 0;
-        if (s.y < 0) s.y = celestialCanvas.height;
-        if (s.y > celestialCanvas.height) s.y = 0;
-
-        // Subtle mouse repulsion
-        const dx = s.x - mouseX;
-        const dy = s.y - mouseY;
-        const dist = Math.sqrt(dx * dx + dy * dy);
-        if (dist < 120) {
-          s.x += (dx / dist) * 1.2;
-          s.y += (dy / dist) * 1.2;
-        }
-
-        ctx.beginPath();
-        ctx.arc(s.x, s.y, s.radius, 0, Math.PI * 2);
-        ctx.fillStyle = starColor;
-        ctx.fill();
-
-        // Connect nearby stars
-        for (let j = i + 1; j < stars.length; j++) {
-          const s2 = stars[j];
-          const dist2 = Math.hypot(s.x - s2.x, s.y - s2.y);
-          if (dist2 < 110) {
-            ctx.beginPath();
-            ctx.moveTo(s.x, s.y);
-            ctx.lineTo(s2.x, s2.y);
-            ctx.strokeStyle = lineColor + (1 - dist2 / 110) * 0.16 + ')';
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-          }
-        }
-      }
-      requestAnimationFrame(renderCelestial);
-    }
-
-    window.addEventListener('resize', resizeCelestial);
-    window.addEventListener('mousemove', e => {
-      mouseX = e.clientX;
-      mouseY = e.clientY;
-      updateLaserDot(e);
-      updateSpotlight(e);
-    });
-    resizeCelestial();
-    requestAnimationFrame(renderCelestial);
-
-    // ====== 2. FULL-SCREEN PHYSICS CONFETTI CANNON ======
-    const confettiCanvas = document.getElementById('confettiCanvas');
-    const cctx = confettiCanvas ? confettiCanvas.getContext('2d') : null;
-    let confettiParticles = [];
-    let isConfettiActive = false;
-
-    function resizeConfetti() {
-      if (!confettiCanvas) return;
-      confettiCanvas.width = window.innerWidth;
-      confettiCanvas.height = window.innerHeight;
-    }
-    window.addEventListener('resize', resizeConfetti);
-    resizeConfetti();
-
-    function fireVictoryConfetti() {
-      playFanfare();
-      showToast('🎊 Victory Confetti Launched!');
-      if (!confettiCanvas) return;
-      const colors = ['#38BDF8', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#FBBF24'];
-      for (let i = 0; i < 220; i++) {
-        confettiParticles.push({
-          x: window.innerWidth * (0.3 + Math.random() * 0.4),
-          y: window.innerHeight * 0.6,
-          vx: (Math.random() - 0.5) * 16,
-          vy: -Math.random() * 18 - 8,
-          size: Math.random() * 8 + 5,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          rotation: Math.random() * 360,
-          rotSpeed: (Math.random() - 0.5) * 10,
-          gravity: 0.35,
-          opacity: 1
-        });
-      }
-      if (!isConfettiActive) {
-        isConfettiActive = true;
-        renderConfetti();
-      }
-    }
+    // Alias for buttons
+    const triggerCelebrationConfetti = fireVictoryConfetti;
+    window.triggerCelebrationConfetti = fireVictoryConfetti;
+    window.fireVictoryConfetti = fireVictoryConfetti;
 
     function renderConfetti() {
       if (!cctx || !confettiCanvas) return;
@@ -3228,7 +3139,7 @@
       }
     }
 
-    // ====== 3. PRESENTATION LASER POINTER & SPOTLIGHT ======
+    // 3. Presentation Laser Pointer & Spotlight
     let isLaserActive = false;
     let isSpotlightActive = false;
     const laserDot = document.getElementById('laserDot');
@@ -3260,7 +3171,7 @@
       }
       const btn = document.getElementById('btnSpotlightToggle');
       if (btn) btn.classList.toggle('active', isSpotlightActive);
-      showToast(isSpotlightActive ? '🔦 Spotlight Active [S]' : 'Spotlight Off');
+      showToast(isSpotlightActive ? '🔦 Spotlight Active [P]' : 'Spotlight Off');
     }
 
     function updateSpotlight(e) {
@@ -3269,75 +3180,24 @@
       }
     }
 
-    // ====== 4. OFFLINE WEB AUDIO API SYNTHESIZER ======
-    let isAudioMuted = false;
-    let audioCtx = null;
-
-    function getAudioCtx() {
-      if (!audioCtx) {
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        if (AudioContext) audioCtx = new AudioContext();
-      }
-      if (audioCtx && audioCtx.state === 'suspended') {
-        audioCtx.resume();
-      }
-      return audioCtx;
-    }
-
+    // 4. Offline Web Audio Synthesizer Controls
     function toggleAudio() {
-      isAudioMuted = !isAudioMuted;
-      const btn = document.getElementById('btnSoundToggle');
+      isSoundEnabled = !isSoundEnabled;
+      const btn = document.getElementById('btnToggleSound');
       if (btn) {
-        btn.textContent = isAudioMuted ? '🔇 Muted' : '🔊 Audio';
-        btn.classList.toggle('active', !isAudioMuted);
+        btn.textContent = isSoundEnabled ? '🔊 Sound: ON' : '🔇 Sound: OFF';
+        btn.classList.toggle('active', isSoundEnabled);
       }
-      showToast(isAudioMuted ? '🔇 Audio Muted' : '🔊 Audio Enabled');
-    }
-
-    function playWhoosh() {
-      if (isAudioMuted) return;
-      try {
-        const ctx = getAudioCtx();
-        if (!ctx) return;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(420, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(140, ctx.currentTime + 0.18);
-        gain.gain.setValueAtTime(0.08, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.18);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.18);
-      } catch(e) {}
-    }
-
-    function playBellChime() {
-      if (isAudioMuted) return;
-      try {
-        const ctx = getAudioCtx();
-        if (!ctx) return;
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'triangle';
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(1760, ctx.currentTime + 0.12);
-        gain.gain.setValueAtTime(0.1, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.35);
-      } catch(e) {}
+      if (isSoundEnabled) playBellChime();
+      showToast(isSoundEnabled ? '🔊 Sound Enabled' : '🔇 Sound Muted');
     }
 
     function playFanfare() {
-      if (isAudioMuted) return;
+      if (!isSoundEnabled) return;
       try {
         const ctx = getAudioCtx();
         if (!ctx) return;
-        const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+        const notes = [523.25, 659.25, 783.99, 1046.50];
         notes.forEach((freq, idx) => {
           const osc = ctx.createOscillator();
           const gain = ctx.createGain();
@@ -3353,7 +3213,7 @@
       } catch(e) {}
     }
 
-    // ====== 5. 3D CARD HOVER TILT WITH SPECULAR SHINE ======
+    // 5. 3D Card Hover Tilt with Specular Shine
     function initCardTilt() {
       const tiltCards = document.querySelectorAll('.slide-3d-card, .cue-card, .mock-window');
       tiltCards.forEach(card => {
@@ -3374,29 +3234,8 @@
     }
     setTimeout(initCardTilt, 500);
 
-    // Auto-fire celebratory confetti on reaching Slide 10
-    const originalGoToSlide = goToSlide;
-    goToSlide = function(idx) {
-      originalGoToSlide(idx);
-      if (idx === 10) {
-        setTimeout(fireVictoryConfetti, 400);
-      }
-    };
-
-    // Hotkeys: [L] Laser, [S] Spotlight, [C] Confetti, [M] Mute
-    window.addEventListener('keydown', e => {
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-      if (e.key === 'l' || e.key === 'L') {
-        toggleLaserPointer();
-      } else if (e.key === 's' || e.key === 'S') {
-        toggleSpotlight();
-      } else if (e.key === 'c' || e.key === 'C') {
-        fireVictoryConfetti();
-      } else if (e.key === 'm' || e.key === 'M') {
-        toggleAudio();
-      }
-    });
-
+    // Initial Trigger for Slide 1 Metrics
+    animateSlideMetrics(slides[0]);
 </script>
 </body>
 </html>

@@ -2,7 +2,7 @@
   {
     "item_name": "Aashirvaad Atta 5kg",
     "category": "Flour & Grains",
-    "stock_units": 46,
+    "stock_units": 44,
     "unit": "bags",
     "cost_price": 240,
     "sell_price": 275
@@ -42,7 +42,7 @@
   {
     "item_name": "Tata Salt 1kg",
     "category": "Spices & Essentials",
-    "stock_units": 50,
+    "stock_units": 49,
     "unit": "packets",
     "cost_price": 22,
     "sell_price": 25
@@ -106,7 +106,7 @@
   {
     "item_name": "Biscuits (Parle-G)",
     "category": "Packaged Food",
-    "stock_units": 45,
+    "stock_units": 0,
     "unit": "packets",
     "cost_price": 8,
     "sell_price": 10
