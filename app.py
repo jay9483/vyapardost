@@ -166,6 +166,25 @@ def play_success_sound():
 
 
 # ----------------- DYNAMIC COLOR & CONTRAST ENGINE (REQUIREMENTS 3, 7, 10) -----------------
+
+# ----------------- DEVICE VIEW ENGINE: RESPONSIVE MOBILE VS DESKTOP -----------------
+if "device_view" not in st.session_state:
+    st.session_state.device_view = "auto"
+
+if "view" in st.query_params:
+    qp_view = st.query_params.get("view")
+    if qp_view in ["mobile", "desktop", "auto"]:
+        st.session_state.device_view = qp_view
+
+is_mobile_view = (st.session_state.device_view == "mobile")
+
+def toggle_device_view(target_mode):
+    st.session_state.device_view = target_mode
+    try:
+        st.query_params["view"] = target_mode
+    except Exception:
+        pass
+
 is_dark = (st.session_state.app_theme == "dark")
 blur_px = 50
 radius_px = 38
@@ -1186,6 +1205,19 @@ count_up_script = """
     }
     
     // High-frequency live watcher (60ms) guarantees instant response when switching tiles
+    
+    // Client-side Smartphone Viewport Auto-Detector (Same link serves mobile automatically)
+    try {
+        var searchParams = new URLSearchParams(window.location.search);
+        if (!searchParams.has('view')) {
+            var isPhone = (window.innerWidth <= 768) || /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+            if (isPhone) {
+                searchParams.set('view', 'mobile');
+                window.location.search = searchParams.toString();
+            }
+        }
+    } catch(e) {}
+
     setInterval(runLiveCountUp, 60);
     runLiveCountUp();
 })();
@@ -1373,6 +1405,41 @@ def save_inventory_to_disk():
         return False
 
 @st.cache_data
+
+def get_unique_customer_directory():
+    """
+    Builds a deduplicated directory of all known customer entities in the database,
+    aggregated with their CID, phone, email, category, serial number, total outstanding udhaar,
+    and historical transaction count.
+    """
+    directory = {}
+    for entry in st.session_state.ledger_db:
+        cid = entry.get("customer_id") or entry.get("customer")
+        if not cid:
+            continue
+        if cid not in directory:
+            directory[cid] = {
+                "customer_id": entry.get("customer_id", ""),
+                "customer": entry.get("customer", ""),
+                "phone": entry.get("phone", ""),
+                "email": entry.get("email", ""),
+                "category": entry.get("category", "Local Resident"),
+                "customer_sl": entry.get("customer_sl", ""),
+                "total_balance_due": 0,
+                "total_advance": 0,
+                "txn_count": 0,
+                "latest_date": entry.get("date", "")
+            }
+        directory[cid]["total_balance_due"] += int(entry.get("balance_due", 0))
+        directory[cid]["total_advance"] += int(entry.get("advance_payment", 0))
+        directory[cid]["txn_count"] += 1
+        if entry.get("phone") and not directory[cid]["phone"]:
+            directory[cid]["phone"] = entry["phone"]
+        if entry.get("email") and not directory[cid]["email"]:
+            directory[cid]["email"] = entry["email"]
+            
+    return sorted(list(directory.values()), key=lambda x: x["customer"].lower())
+
 def get_initial_profile():
     if os.path.exists(PERSISTENT_PROFILE_FILE):
         try:
@@ -1494,6 +1561,11 @@ if "dispatched_nudges" not in st.session_state:
 if "user_profile" not in st.session_state:
     st.session_state.user_profile = get_initial_profile()
 
+# ----------------- DYNAMIC VIEW DISPATCHER (MOBILE VS LAPTOP) -----------------
+if is_mobile_view:
+    render_mobile_kirana_os()
+    st.stop()
+
 # ----------------- STICKY LIQUID GLASS APP HEADER & CINEMATIC HERO -----------------
 hero_and_nav_html = f"""<div class="bg-glow"></div>
 <div class="lift-nav-bar">
@@ -1541,7 +1613,7 @@ ELEVATE YOUR <br/>
 st.markdown(hero_and_nav_html, unsafe_allow_html=True)
 
 # Navigation Controls: Theme Toggle, Onboarding Tour, Profile Modal, Scan to Test QR (For Judges)
-col_ctrl1, col_ctrl2, col_ctrl3, col_ctrl4 = st.columns([1.5, 1.2, 1.2, 1.5])
+col_ctrl1, col_ctrl2, col_ctrl3, col_ctrl4, col_ctrl5 = st.columns([1.3, 1.1, 1.1, 1.4, 1.3])
 
 with col_ctrl1:
     theme_btn_label = "🌙 Dark Mode Active (Click for Light Mode)" if is_dark else "☀️ Light Mode Active (Click for Dark Mode)"
@@ -1569,6 +1641,13 @@ with col_ctrl4:
         st.session_state.show_judge_qr_modal = not st.session_state.get("show_judge_qr_modal", False)
         st.rerun()
 
+with col_ctrl5:
+    view_btn_label = "📱 Switch to Mobile View" if not is_mobile_view else "💻 Switch to Laptop View"
+    target_next_view = "mobile" if not is_mobile_view else "desktop"
+    if st.button(view_btn_label, use_container_width=True, key="btn_toggle_device_view"):
+        toggle_device_view(target_next_view)
+        st.rerun()
+
 if st.session_state.get("show_judge_qr_modal", False):
     with st.container(border=True):
         qr_col1, qr_col2 = st.columns([1, 2.2])
@@ -1588,7 +1667,7 @@ JUDGE DEMO GATEWAY
 Kirana store owners primarily run their operations on smartphones. Scan this QR code with your iPhone or Android camera to test the responsive mobile interface, voice khata recording, and instant ledger sync in real-time.
 </p>
 <div style="background:var(--card-bg); border:1px solid var(--hairline-border); border-radius:12px; padding:10px 14px; font-family:monospace; font-size:0.82rem; color:var(--accent-color); margin-bottom:10px;">
-https://florida-betty-dot-attitude.trycloudflare.com
+https://oral-massachusetts-hardcover-ali.trycloudflare.com
 </div>
 </div>""", unsafe_allow_html=True)
             if st.button("✖ Close QR Gateway", key="btn_close_judge_qr"):
@@ -4124,100 +4203,77 @@ def render_tab7_create_account():
 <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="8.5" cy="7" r="4" /><line x1="20" y1="8" x2="20" y2="14" stroke="#38BDF8" stroke-width="2.2" /><line x1="23" y1="11" x2="17" y2="11" stroke="#38BDF8" stroke-width="2.2" /></svg>
 </div>
 <div>
-<h3 style="margin:0; font-family:'Sreda', serif; font-size:1.35rem; color:var(--text-primary);">Create New Customer Account</h3>
-<div style="font-size:0.82rem; color:var(--text-secondary);">Register a new customer account directly into your ledger with prefix assistance & duplicate check.</div>
+<h3 style="margin:0; font-family:'Sreda', serif; font-size:1.35rem; color:var(--text-primary);">Create New Customer Account & Smart Auto-Fill Entry</h3>
+<div style="font-size:0.82rem; color:var(--text-secondary);">Select or type any detail (Name, Phone, Email, CID) — the system automatically recognizes matching database records and autofills all related fields!</div>
 </div>
 </div>""", unsafe_allow_html=True)
 
-    # REQUIREMENT 5: LOOKUP EXISTING CUSTOMER BY SERIAL NUMBER OR CUSTOMER ID
+    customer_dir = get_unique_customer_directory()
+
+    # SMART CUSTOMER AUTOCOMPLETE & QUICK AUTOFILL SELECTOR
     with st.container(border=True):
-        st.markdown("#### 🔍 Customer Serial Number & ID Directory Lookup")
-        st.caption("Enter an existing Customer Serial Number (e.g. `SL-0001`, `SL-0042`) or Customer ID (e.g. `CID-0101`, `CID-B2B-01`) to view their complete profile, order history, and auto-fill the transaction form:")
+        st.markdown("#### ⚡ 1. Smart Customer Autocomplete (Instant Cross-Field Auto-Fill)")
+        st.caption("Start typing or select from the dropdown below. When an existing customer is selected, **all related fields** (Name, Phone, Email, CID, Category, Serial, Outstanding Debt) auto-populate instantly:")
 
-        col_lk1, col_lk2 = st.columns([3, 1])
-        with col_lk1:
-            lookup_val = st.text_input(
-                "Enter Customer Serial Number (SL-xxxx) or Customer ID (CID-xxxx):",
-                placeholder="e.g. SL-0001, SL-0050, CID-0101, CID-B2B-01",
-                key="lookup_customer_input"
-            ).strip()
-        with col_lk2:
-            st.markdown("<div style='height: 28px;'></div>", unsafe_allow_html=True)
-            search_btn = st.button("🔎 Search Record", use_container_width=True, key="btn_lookup_search")
+        autocomplete_options = [
+            "-- ➕ Type Below to Register a Brand-New Customer, OR Select to Auto-Fill Existing --"
+        ] + [
+            f"{c['customer']} • {c['phone']} • {c.get('email', '')} ({c['customer_id']}{' • ₹' + str(c['total_balance_due']) + ' Due' if c['total_balance_due'] > 0 else ''})"
+            for c in customer_dir
+        ]
 
-        if lookup_val:
-            lookup_clean = lookup_val.lower()
-            # Find all matching transactions for this customer
-            matched_by_sl = [x for x in st.session_state.ledger_db if x.get("customer_sl", "").lower() == lookup_clean]
-            matched_by_cid = [x for x in st.session_state.ledger_db if x.get("customer_id", "").lower() == lookup_clean]
-            
-            matched_records = matched_by_sl if matched_by_sl else matched_by_cid
-            
-            if matched_records:
-                target_entry = matched_records[0]
-                matched_cid = target_entry.get("customer_id")
-                # Get all records for this same customer entity across time
-                all_customer_txns = [x for x in st.session_state.ledger_db if x.get("customer_id") == matched_cid]
-                
-                tot_billed = sum(x.get("total_amount", 0) for x in all_customer_txns)
-                tot_paid = sum(x.get("paid_amount", 0) for x in all_customer_txns)
-                tot_due = sum(x.get("balance_due", 0) for x in all_customer_txns)
-                tot_adv = sum(x.get("advance_payment", 0) for x in all_customer_txns)
+        def on_autocomplete_change():
+            sel = st.session_state.get("select_cust_autofill", "")
+            if sel and not sel.startswith("--"):
+                # Extract customer_id from between parentheses
+                m_cid = re.search(r'\((CID-[^\s•)]+)', sel)
+                target_cid = m_cid.group(1) if m_cid else None
+                matched_c = next((c for c in customer_dir if c["customer_id"] == target_cid), None)
+                if not matched_c:
+                    # Fallback match by name
+                    cust_name_part = sel.split(" • ")[0].strip()
+                    matched_c = next((c for c in customer_dir if c["customer"] == cust_name_part), None)
+                if matched_c:
+                    st.session_state["autofill_cust_name"] = matched_c["customer"]
+                    st.session_state["autofill_cust_phone"] = matched_c["phone"]
+                    st.session_state["autofill_cust_email"] = matched_c.get("email", "")
+                    st.session_state["autofill_cust_cid"] = matched_c["customer_id"]
+                    st.session_state["autofill_cust_cat"] = matched_c.get("category", "Local Resident")
+                    st.session_state["autofill_cust_sl"] = matched_c.get("customer_sl", "")
+                    st.session_state["matched_customer_profile"] = matched_c
 
-                st.markdown(f"""
-                <div style="background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); border: 1.5px solid #86EFAC; border-radius: 12px; padding: 16px 20px; margin: 10px 0 14px 0;">
-                    <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
-                        <div>
-                            <span style="background:#15803D; color:white; font-size:0.75rem; font-weight:800; padding:3px 9px; border-radius:6px;">FOUND CUSTOMER PROFILE</span>
-                            <span style="background:#E2E8F0; color:#1E293B; font-size:0.75rem; font-weight:800; padding:3px 8px; border-radius:6px; margin-left:6px;">CID: {matched_cid}</span>
-                            <span style="background:#DBEAFE; color:#1D4ED8; font-size:0.75rem; font-weight:800; padding:3px 8px; border-radius:6px; margin-left:6px;">Sl No: {target_entry.get('customer_sl')}</span>
-                            <h3 style="margin:6px 0 2px 0; color:#14532D; font-family:'Sreda', serif;">{target_entry.get('customer')}</h3>
-                            <span style="color:#475569; font-size:0.86rem;">📞 {target_entry.get('phone')} • 📧 {target_entry.get('email', 'N/A')} • Category: <b>{target_entry.get('category', 'Regular')}</b></span>
-                        </div>
-                        <div style="display:flex; gap:10px; flex-wrap:wrap;">
-                            <div style="background:var(--card-bg); padding:6px 12px; border-radius:8px; border:1px solid var(--hairline-border); text-align:center;">
-                                <div style="font-size:0.68rem; color:var(--text-secondary); font-weight:700;">TOTAL TRANSACTIONS</div>
-                                <div style="font-size:1.1rem; font-weight:800; color:var(--text-primary);">{len(all_customer_txns)} Orders</div>
-                            </div>
-                            <div style="background:var(--card-bg); padding:6px 12px; border-radius:8px; border:1px solid var(--hairline-border); text-align:center;">
-                                <div style="font-size:0.68rem; color:var(--text-secondary); font-weight:700;">LIFETIME BILLED</div>
-                                <div style="font-size:1.1rem; font-weight:800; color:var(--text-primary);">₹{tot_billed:,}</div>
-                            </div>
-                            <div style="background:var(--card-bg); padding:6px 12px; border-radius:8px; border:1px solid var(--hairline-border); text-align:center;">
-                                <div style="font-size:0.68rem; color:var(--text-secondary); font-weight:700;">UDHAAR BALANCE</div>
-                                <div style="font-size:1.1rem; font-weight:800; color:#DC2626;">₹{tot_due:,}</div>
-                            </div>
-                            <div style="background:var(--card-bg); padding:6px 12px; border-radius:8px; border:1px solid var(--hairline-border); text-align:center;">
-                                <div style="font-size:0.68rem; color:var(--text-secondary); font-weight:700;">ADVANCE SURPLUS</div>
-                                <div style="font-size:1.1rem; font-weight:800; color:#2563EB;">₹{tot_adv:,}</div>
-                            </div>
+        selected_cust_opt = st.selectbox(
+            "🔍 Search & Select Existing Customer to Auto-Fill:",
+            options=autocomplete_options,
+            key="select_cust_autofill",
+            on_change=on_autocomplete_change
+        )
+
+        matched_p = st.session_state.get("matched_customer_profile")
+        if matched_p and selected_cust_opt and not selected_cust_opt.startswith("--"):
+            due_badge = f"<span style='background:#EF4444; color:white; font-size:0.75rem; font-weight:800; padding:2px 8px; border-radius:6px; margin-left:8px;'>⚠️ ₹{matched_p['total_balance_due']:,} ACTIVE UDHAAR</span>" if matched_p['total_balance_due'] > 0 else "<span style='background:#10B981; color:white; font-size:0.75rem; font-weight:800; padding:2px 8px; border-radius:6px; margin-left:8px;'>🟢 ZERO DEBT</span>"
+            st.markdown(f"""
+            <div style="background: rgba(56, 189, 248, 0.08); border: 1.5px solid rgba(56, 189, 248, 0.35); border-radius: 12px; padding: 12px 16px; margin-top: 10px;">
+                <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+                    <div>
+                        <span style="font-weight:800; font-size:1.02rem; color:var(--text-primary);">{matched_p['customer']}</span>
+                        {due_badge}
+                        <div style="font-size:0.82rem; color:var(--text-secondary); margin-top:3px;">
+                            📞 <b>{matched_p['phone']}</b> • 📧 <b>{matched_p['email']}</b> • Category: <b>{matched_p['category']}</b>
                         </div>
                     </div>
+                    <div style="display:flex; gap:12px;">
+                        <span style="background:var(--card-bg); border:1px solid var(--hairline-border); padding:4px 10px; border-radius:8px; font-size:0.78rem; font-weight:700;">CID: {matched_p['customer_id']}</span>
+                        <span style="background:var(--card-bg); border:1px solid var(--hairline-border); padding:4px 10px; border-radius:8px; font-size:0.78rem; font-weight:700;">{matched_p['txn_count']} Past Orders</span>
+                    </div>
                 </div>
-                """, unsafe_allow_html=True)
-
-                # Show recent transactions history for this customer
-                st.markdown(f"**Transaction History for Customer ID `{matched_cid}` ({target_entry.get('customer')}):**")
-                df_cust_hist = pd.DataFrame(all_customer_txns)
-                hist_cols = ["customer_sl", "txn_id", "date", "items", "total_amount", "paid_amount", "balance_due", "status", "payment_mode"]
-                safe_hist_cols = [c for c in hist_cols if c in df_cust_hist.columns]
-                st.dataframe(df_cust_hist[safe_hist_cols], use_container_width=True, hide_index=True)
-
-                if st.button("📋 Auto-Fill Registration Form with this Customer's Details", key="btn_autofill_cust"):
-                    st.session_state["autofill_cust_name"] = target_entry.get("customer", "")
-                    st.session_state["autofill_cust_phone"] = target_entry.get("phone", "+91 ")
-                    st.session_state["autofill_cust_email"] = target_entry.get("email", "@gmail.com")
-                    st.session_state["autofill_cust_cat"] = target_entry.get("category", "Local Resident")
-                    st.session_state["autofill_cust_cid"] = matched_cid
-                    st.toast(f"✅ Form auto-filled with details for {target_entry.get('customer')}!", icon="📋")
-                    st.rerun()
-            else:
-                st.info(f"ℹ️ No customer record found matching serial number or ID **{lookup_val}**. You can register a new customer profile using the form below.")
+            </div>
+            """, unsafe_allow_html=True)
 
     st.markdown("<div style='height: 12px;'></div>", unsafe_allow_html=True)
 
     with st.container(border=True):
-        st.markdown("#### 1. Select Account Type")
+        st.markdown("#### 2. Select Account Type")
         account_type = st.radio(
             "What type of account is this entry for?",
             ["🔴 Udhaar Account (Customer Credit Ledger)", "🟢 Sales Account (Direct Retail Sale)"],
@@ -4225,9 +4281,8 @@ def render_tab7_create_account():
         )
         
         st.markdown("---")
-        st.markdown("#### 2. Customer Identification & Contact Info")
+        st.markdown("#### 3. Customer Identification & Contact Info (All Fields Linked)")
         
-        # REQUIREMENT 6: NEXT UNIQUE SERIAL NUMBER FOR ENTRY & PERSISTENT CUSTOMER ID
         next_sl_no = f"SL-{len(st.session_state.ledger_db) + 1:04d}"
         default_name = st.session_state.get("autofill_cust_name", "")
         default_phone = st.session_state.get("autofill_cust_phone", "+91 ")
@@ -4235,29 +4290,55 @@ def render_tab7_create_account():
         default_cat = st.session_state.get("autofill_cust_cat", "Local Resident")
         assigned_cid = st.session_state.get("autofill_cust_cid", None)
         
-        # If not already assigned by lookup, check if phone or name exists in ledger
-        if not assigned_cid and default_phone.strip() not in ["", "+91", "+91 "]:
-            existing_match = next((x for x in st.session_state.ledger_db if x.get("phone", "").strip() == default_phone.strip()), None)
-            if existing_match:
-                assigned_cid = existing_match.get("customer_id")
-
         if not assigned_cid:
             existing_cids = set(x.get("customer_id", "") for x in st.session_state.ledger_db if x.get("customer_id"))
             assigned_cid = f"CID-{len(existing_cids) + 101:04d}"
 
         col_c1, col_c2, col_c3 = st.columns(3)
         with col_c1:
-            cust_sl = st.text_input("Customer Serial No (Entry-Unique Sl. No):", value=next_sl_no, disabled=False)
+            cust_sl = st.text_input("Customer Serial No (Entry-Unique Sl. No):", value=st.session_state.get("autofill_cust_sl", next_sl_no), disabled=False)
             cust_cid_disp = st.text_input("Customer ID (Persistent Entity CID):", value=assigned_cid, disabled=False)
-            cust_name = st.text_input("Customer Full Name *:", value=default_name, placeholder="e.g. Anand Kumar, Sunita Rao")
+            cust_name = st.text_input("Customer Full Name *:", value=default_name, placeholder="e.g. Anand Kumar, Sunita Rao", key="input_cust_name_field")
         with col_c2:
-            cust_email = st.text_input("Customer Email Address:", value=default_email, placeholder="username@gmail.com")
-            cust_phone = st.text_input("Contact / Mobile Number *:", value=default_phone, placeholder="+91 98765 43210")
+            cust_email = st.text_input("Customer Email Address:", value=default_email, placeholder="username@gmail.com", key="input_cust_email_field")
+            cust_phone = st.text_input("Contact / Mobile Number *:", value=default_phone, placeholder="+91 98765 43210", key="input_cust_phone_field")
         with col_c3:
-            cat_list = ["Local Resident", "Regular Kirana Buyer", "PG Student", "Commercial / Vendor", "Wholesale Buyer"]
+            cat_list = ["Local Resident", "Regular Kirana Buyer", "PG Student", "Commercial / Vendor", "Wholesale Buyer", "Temple Caterer", "Commercial Tea Stall"]
             cat_idx = cat_list.index(default_cat) if default_cat in cat_list else 0
             cust_category = st.selectbox("Customer Category:", cat_list, index=cat_idx)
             txn_date = st.date_input("Transaction Date:", value=datetime.date(2026, 11, 4))
+
+        # REAL-TIME CROSS-FIELD MATCH DETECTION (If user typed directly into Name, Phone, or Email)
+        typed_n = cust_name.strip().lower()
+        typed_p = "".join(filter(str.isdigit, cust_phone))
+        typed_e = cust_email.strip().lower()
+
+        live_matches = []
+        if typed_n and len(typed_n) >= 3 and typed_n != default_name.lower():
+            live_matches = [c for c in customer_dir if typed_n in c["customer"].lower()]
+        elif typed_p and len(typed_p) >= 5 and typed_p != "".join(filter(str.isdigit, default_phone)):
+            live_matches = [c for c in customer_dir if typed_p in "".join(filter(str.isdigit, c["phone"]))]
+        elif typed_e and len(typed_e) >= 4 and typed_e != "@gmail.com" and typed_e != default_email.lower():
+            live_matches = [c for c in customer_dir if typed_e in c["email"].lower()]
+
+        if live_matches:
+            st.info(f"💡 **Database match recognized!** Found {len(live_matches)} existing customer(s) matching your input:")
+            match_opts = ["-- Select to auto-fill all other fields for this person --"] + [
+                f"{m['customer']} • {m['phone']} • {m['email']} ({m['customer_id']})"
+                for m in live_matches[:8]
+            ]
+            sel_live = st.selectbox("Choose matching customer to auto-fill:", match_opts, key="sb_dynamic_live_matches")
+            if sel_live and not sel_live.startswith("--"):
+                chosen_cid = re.search(r'\((CID-[^\s•)]+)', sel_live)
+                target_m = next((m for m in live_matches if m["customer_id"] == (chosen_cid.group(1) if chosen_cid else "")), live_matches[0])
+                st.session_state["autofill_cust_name"] = target_m["customer"]
+                st.session_state["autofill_cust_phone"] = target_m["phone"]
+                st.session_state["autofill_cust_email"] = target_m.get("email", "")
+                st.session_state["autofill_cust_cid"] = target_m["customer_id"]
+                st.session_state["autofill_cust_cat"] = target_m.get("category", "Local Resident")
+                st.session_state["autofill_cust_sl"] = target_m.get("customer_sl", "")
+                st.session_state["matched_customer_profile"] = target_m
+                st.rerun()
 
         with st.expander("📲 Optional: Send Mobile OTP Verification to Customer Phone"):
             c_otp1, c_otp2 = st.columns([1.5, 1])
@@ -4292,7 +4373,7 @@ def render_tab7_create_account():
                     st.success("✅ **Customer Mobile Verified via OTP**")
 
         st.markdown("---")
-        st.markdown("#### 3. Product Purchase Details & Total Spends")
+        st.markdown("#### 4. Product Purchase Details & Total Spends")
         col_p1, col_p2 = st.columns([1.5, 1])
         with col_p1:
             prod_details = st.text_area(
@@ -4305,7 +4386,7 @@ def render_tab7_create_account():
             st.caption("Total monetary transaction value.")
 
         st.markdown("---")
-        st.markdown("#### 4. Payment Settlement & Udhaar Configuration")
+        st.markdown("#### 5. Payment Settlement & Udhaar Configuration")
         
         paid_amount = 0
         balance_due = 0
@@ -4428,7 +4509,7 @@ def render_tab7_create_account():
                         duplicate_entry_match = existing
                         break
 
-        # REQUIREMENT 6 & 7: FORM COMMIT HANDLER WITH CUSTOMER_SL, CUSTOMER_ID, TXN_ID
+        # FORM COMMIT HANDLER
         gen_txn_id = f"TXN-{random.randint(1000, 9999)}"
         if duplicate_entry_match:
             st.warning("""
@@ -4474,6 +4555,7 @@ def render_tab7_create_account():
                 }
                 st.session_state.ledger_db.insert(0, new_account_entry)
                 save_ledger_to_disk()
+                play_success_sound()
                 st.balloons()
                 st.toast(f"🎉 Duplicate confirmed & registered for {cust_name} (Serial: {new_account_entry['customer_sl']})!", icon="✅")
                 st.rerun()
@@ -4510,9 +4592,456 @@ def render_tab7_create_account():
                     }
                     st.session_state.ledger_db.insert(0, new_account_entry)
                     save_ledger_to_disk()
+                    play_success_sound()
                     st.balloons()
                     st.toast(f"🎉 Account successfully created for {cust_name}! Serial `{new_account_entry['customer_sl']}` | Customer ID `{new_account_entry['customer_id']}` registered in Ledger.", icon="✅")
                     st.rerun()
+
+
+
+# ==============================================================================
+# VYAPARDOST MOBILE KIRANA OS (ULTRA-MINIMALIST SINGLE-SCREEN SMARTPHONE APP)
+# ==============================================================================
+def render_mobile_kirana_os():
+    st.markdown("""<style>
+    @media (max-width: 768px) {
+        .block-container {
+            padding-top: 0.8rem !important;
+            padding-bottom: 1rem !important;
+            padding-left: 0.6rem !important;
+            padding-right: 0.6rem !important;
+            max-width: 100% !important;
+        }
+        div[data-testid="stHorizontalBlock"] {
+            gap: 6px !important;
+        }
+        div[data-testid="stRadio"] > div {
+            flex-wrap: wrap !important;
+            gap: 6px !important;
+        }
+        .stButton button {
+            padding: 6px 10px !important;
+            font-size: 0.82rem !important;
+        }
+    }
+    </style>""", unsafe_allow_html=True)
+
+    df_all = pd.DataFrame(st.session_state.ledger_db)
+    for col in ["total_amount", "paid_amount", "balance_due", "advance_payment"]:
+        if col in df_all.columns:
+            df_all[col] = pd.to_numeric(df_all[col], errors="coerce").fillna(0).astype(int)
+        else:
+            df_all[col] = 0
+
+    total_cleared = int(df_all["paid_amount"].sum())
+    total_pending = int(df_all["balance_due"].sum())
+    overdue_count = len(df_all[df_all["balance_due"] > 0])
+    ref_date_7d = datetime.date(2026, 11, 7) - datetime.timedelta(days=7)
+    overdue_7d_list = [
+        x for x in st.session_state.ledger_db
+        if x.get("balance_due", 0) > 0 and datetime.date.fromisoformat(x.get("date", "2026-11-01")) < ref_date_7d
+    ]
+    overdue_7d_sum = sum(x.get("balance_due", 0) for x in overdue_7d_list)
+
+    # 1. ULTRA-COMPACT MOBILE HEADER (NO SCROLLING HEADER)
+    st.markdown(f"""
+    <div style="background:var(--card-bg); backdrop-filter:blur(24px); border:1px solid var(--hairline-border); border-radius:18px; padding:10px 14px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; box-shadow:0 4px 16px rgba(0,0,0,0.06);">
+        <div style="display:flex; align-items:center; gap:10px;">
+            <img src="data:image/jpeg;base64,{VYAPARDOST_LOGO_B64}" style="width:32px; height:32px; border-radius:8px; object-fit:cover; border:1px solid var(--hairline-border);" />
+            <div>
+                <div style="font-size:0.92rem; font-weight:800; letter-spacing:0.12em; color:var(--text-primary); text-transform:uppercase;">VYAPARDOST AI</div>
+                <div style="font-size:0.68rem; color:var(--text-secondary); font-weight:600;">{st.session_state.user_profile.get('store_name', 'Sri Manjunatha Provision Store')}</div>
+            </div>
+        </div>
+        <div style="display:flex; align-items:center; gap:8px;">
+            <span style="background:#DCFCE7; color:#15803D; font-size:0.68rem; font-weight:800; padding:2px 8px; border-radius:100px; border:1px solid #BBF7D0;">● ONLINE</span>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # Header Action Switchers: Switch to Laptop View + Theme
+    m_h1, m_h2 = st.columns([2, 1])
+    with m_h1:
+        if st.button("💻 Switch to Laptop View", key="btn_mobile_to_laptop", use_container_width=True):
+            toggle_device_view("desktop")
+            st.rerun()
+    with m_h2:
+        thm_icon = "☀️ Light" if is_dark else "🌙 Dark"
+        if st.button(thm_icon, key="btn_mobile_thm_toggle", use_container_width=True):
+            new_theme = "light" if is_dark else "dark"
+            st.session_state.app_theme = new_theme
+            save_theme_to_disk(new_theme)
+            st.rerun()
+
+    # 2. SINGLE-SCREEN KIRANA SNAPSHOT (HIGH-DENSITY COMPACT HUD)
+    st.markdown(f"""
+    <div style="background:var(--card-bg); border:1px solid var(--hairline-border); border-radius:16px; padding:10px 12px; margin:8px 0 12px 0; box-shadow:0 4px 14px rgba(0,0,0,0.05);">
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:8px; text-align:center;">
+            <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.22); border-radius:12px; padding:8px 6px;">
+                <div style="font-size:0.68rem; color:#10B981; font-weight:800; text-transform:uppercase;">💵 Cash Inflow</div>
+                <div style="font-size:1.18rem; font-weight:800; color:#10B981; font-family:'Sreda',serif; margin-top:2px;">₹{total_cleared:,}</div>
+            </div>
+            <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.22); border-radius:12px; padding:8px 6px;">
+                <div style="font-size:0.68rem; color:#EF4444; font-weight:800; text-transform:uppercase;">🔴 Udhaar Debt</div>
+                <div style="font-size:1.18rem; font-weight:800; color:#EF4444; font-family:'Sreda',serif; margin-top:2px;">₹{total_pending:,}</div>
+            </div>
+            <div style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.22); border-radius:12px; padding:8px 6px;">
+                <div style="font-size:0.68rem; color:#F59E0B; font-weight:800; text-transform:uppercase;">⚠️ >7D Overdue</div>
+                <div style="font-size:1.18rem; font-weight:800; color:#F59E0B; font-family:'Sreda',serif; margin-top:2px;">₹{overdue_7d_sum:,}</div>
+            </div>
+            <div style="background:rgba(56,189,248,0.08); border:1px solid rgba(56,189,248,0.22); border-radius:12px; padding:8px 6px;">
+                <div style="font-size:0.68rem; color:#0284C7; font-weight:800; text-transform:uppercase;">⚡ AI Precision</div>
+                <div style="font-size:1.18rem; font-weight:800; color:#0284C7; font-family:'Sreda',serif; margin-top:2px;">99.4%</div>
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # 3. THUMB-FRIENDLY ACTION DOCK
+    m_action = st.radio(
+        "Select Operation:",
+        ["➕ New Bill", "🎙️ Voice Khata", "📸 Scan Bill", "📒 Udhaar List", "📋 Quick Ledger"],
+        horizontal=True,
+        label_visibility="collapsed",
+        key="mobile_nav_segmented"
+    )
+
+    customer_dir = get_unique_customer_directory()
+
+    # 4. SINGLE-SCREEN WORKSPACE CARDS (ZERO OVERFLOW, INSTANT TOUCH ACTIONS)
+    if m_action == "➕ New Bill":
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:8px; margin:6px 0 8px 0;">
+            <span style="font-size:1rem; font-weight:800; color:var(--text-primary); font-family:'Sreda',serif;">➕ New Customer Bill & Smart Auto-Fill</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.container(border=True):
+            # SMART AUTOCOMPLETE DROPDOWN
+            m_autocomplete_opts = [
+                "-- 🔍 Select Existing Customer to Auto-Fill (or Type Below) --"
+            ] + [
+                f"{c['customer']} • {c['phone']} • {c.get('email', '')} ({c['customer_id']}{' • ₹' + str(c['total_balance_due']) + ' Due' if c['total_balance_due'] > 0 else ''})"
+                for c in customer_dir
+            ]
+            
+            def on_mobile_cust_change():
+                sel = st.session_state.get("sel_m_cust", "")
+                if sel and not sel.startswith("--"):
+                    m_cid = re.search(r'\((CID-[^\s•)]+)', sel)
+                    target_cid = m_cid.group(1) if m_cid else None
+                    matched_c = next((c for c in customer_dir if c["customer_id"] == target_cid), None)
+                    if not matched_c:
+                        cust_name_part = sel.split(" • ")[0].strip()
+                        matched_c = next((c for c in customer_dir if c["customer"] == cust_name_part), None)
+                    if matched_c:
+                        st.session_state["m_autofill_name"] = matched_c["customer"]
+                        st.session_state["m_autofill_phone"] = matched_c["phone"]
+                        st.session_state["m_autofill_email"] = matched_c.get("email", "")
+                        st.session_state["m_autofill_cid"] = matched_c["customer_id"]
+                        st.session_state["m_autofill_cat"] = matched_c.get("category", "Local Resident")
+                        st.session_state["m_autofill_sl"] = matched_c.get("customer_sl", "")
+                        st.session_state["m_matched_profile"] = matched_c
+
+            sel_m_cust = st.selectbox(
+                "Search & Auto-Fill Customer:",
+                options=m_autocomplete_opts,
+                key="sel_m_cust",
+                on_change=on_mobile_cust_change
+            )
+
+            matched_mp = st.session_state.get("m_matched_profile")
+            if matched_mp and sel_m_cust and not sel_m_cust.startswith("--"):
+                st.markdown(f"""
+                <div style="background:rgba(16,185,129,0.08); border:1px solid rgba(16,185,129,0.3); border-radius:10px; padding:8px 12px; margin-bottom:8px; font-size:0.8rem;">
+                    <b>{matched_mp['customer']}</b> ({matched_mp['phone']}) • CID: <code>{matched_mp['customer_id']}</code><br>
+                    <span style="color:{'#EF4444' if matched_mp['total_balance_due'] > 0 else '#10B981'}; font-weight:700;">
+                        {'⚠️ Outstanding Debt: ₹' + str(matched_mp['total_balance_due']) if matched_mp['total_balance_due'] > 0 else '🟢 Clear Account (Zero Debt)'}
+                    </span>
+                </div>
+                """, unsafe_allow_html=True)
+
+            m_cname = st.text_input("Customer Name *:", value=st.session_state.get("m_autofill_name", ""), placeholder="e.g. Anand Kumar, Suresh Gowda", key="m_input_name")
+            m_cphone = st.text_input("Mobile Number *:", value=st.session_state.get("m_autofill_phone", "+91 "), placeholder="+91 98451 23456", key="m_input_phone")
+            
+            # LIVE CROSS-FIELD MATCH DETECTION
+            typed_m_n = m_cname.strip().lower()
+            typed_m_p = "".join(filter(str.isdigit, m_cphone))
+            if typed_m_n and len(typed_m_n) >= 3 and typed_m_n != st.session_state.get("m_autofill_name", "").lower():
+                matches_m = [c for c in customer_dir if typed_m_n in c["customer"].lower()]
+                if matches_m:
+                    st.caption(f"💡 Found {len(matches_m)} matching customer in database:")
+                    sel_dyn_m = st.selectbox("Tap to autofill:", ["-- Choose match --"] + [f"{m['customer']} ({m['phone']})" for m in matches_m[:5]], key="m_sb_dyn_match")
+                    if sel_dyn_m and not sel_dyn_m.startswith("--"):
+                        matched_dyn = next(m for m in matches_m if m["customer"] in sel_dyn_m)
+                        st.session_state["m_autofill_name"] = matched_dyn["customer"]
+                        st.session_state["m_autofill_phone"] = matched_dyn["phone"]
+                        st.session_state["m_autofill_email"] = matched_dyn.get("email", "")
+                        st.session_state["m_autofill_cid"] = matched_dyn["customer_id"]
+                        st.session_state["m_autofill_cat"] = matched_dyn.get("category", "Local Resident")
+                        st.session_state["m_autofill_sl"] = matched_dyn.get("customer_sl", "")
+                        st.session_state["m_matched_profile"] = matched_dyn
+                        st.rerun()
+
+            m_items = st.text_input("Items Purchased *:", placeholder="e.g. 2pkts Milk, 1kg Sugar, Atta", key="m_input_items")
+            
+            m_col_amt1, m_col_amt2 = st.columns(2)
+            with m_col_amt1:
+                m_total = st.number_input("Total Bill (₹) *:", min_value=1, max_value=200000, value=120, step=10, key="m_input_total")
+            with m_col_amt2:
+                m_cash = st.number_input("Cash/UPI Paid (₹):", min_value=0, max_value=200000, value=120, step=10, key="m_input_paid")
+
+            m_due = max(0, int(m_total) - int(m_cash))
+            m_adv = max(0, int(m_cash) - int(m_total))
+            
+            if m_due > 0:
+                st.markdown(f"<div style='background:rgba(239,68,68,0.1); border:1px solid #FCA5A5; border-radius:8px; padding:6px 10px; font-size:0.82rem; color:#DC2626; font-weight:700;'>🔴 Udhaar Credit to Record: ₹{m_due:,}</div>", unsafe_allow_html=True)
+            elif m_adv > 0:
+                st.markdown(f"<div style='background:rgba(16,185,129,0.1); border:1px solid #86EFAC; border-radius:8px; padding:6px 10px; font-size:0.82rem; color:#15803D; font-weight:700;'>🟢 Excess Advance Payment: ₹{m_adv:,}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown("<div style='background:rgba(16,185,129,0.1); border:1px solid #86EFAC; border-radius:8px; padding:6px 10px; font-size:0.82rem; color:#15803D; font-weight:700;'>🟢 100% Fully Settled</div>", unsafe_allow_html=True)
+
+            st.markdown("<div style='height: 8px;'></div>", unsafe_allow_html=True)
+            if st.button("💾 Save Bill to Ledger", type="primary", use_container_width=True, key="m_btn_save_bill"):
+                if not m_cname.strip():
+                    st.error("Please enter customer name.")
+                elif not m_items.strip():
+                    st.error("Please enter purchase items.")
+                else:
+                    gen_txn = f"TXN-{random.randint(1000, 9999)}"
+                    assigned_cid_m = st.session_state.get("m_autofill_cid", f"CID-{len(customer_dir) + 101:04d}")
+                    new_entry = {
+                        "id": gen_txn,
+                        "txn_id": gen_txn,
+                        "customer_sl": st.session_state.get("m_autofill_sl", f"SL-{len(st.session_state.ledger_db) + 1:04d}"),
+                        "customer_id": assigned_cid_m,
+                        "customer": m_cname.strip(),
+                        "email": st.session_state.get("m_autofill_email", "@gmail.com"),
+                        "phone": m_cphone.strip(),
+                        "date": datetime.date(2026, 11, 4).strftime("%Y-%m-%d"),
+                        "account_type": "Udhaar Account" if m_due > 0 else "Sales Account",
+                        "items": m_items.strip(),
+                        "total_amount": int(m_total),
+                        "paid_amount": int(m_cash),
+                        "balance_due": int(m_due),
+                        "advance_payment": int(m_adv),
+                        "status": "Advance Paid" if m_adv > 0 else ("Pending Udhaar" if m_due > 0 else "Fully Paid"),
+                        "payment_mode": "Cash" if m_cash > 0 and m_due == 0 else ("Credit" if m_cash == 0 else "Partial UPI/Cash"),
+                        "category": st.session_state.get("m_autofill_cat", "Local Resident"),
+                        "notes": "Mobile Quick Bill Entry"
+                    }
+                    st.session_state.ledger_db.insert(0, new_entry)
+                    save_ledger_to_disk()
+                    play_success_sound()
+                    st.balloons()
+                    st.toast(f"🎉 Bill saved for {m_cname} (₹{m_total})!", icon="✅")
+                    st.rerun()
+
+    elif m_action == "🎙️ Voice Khata":
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:8px; margin:6px 0 8px 0;">
+            <span style="font-size:1rem; font-weight:800; color:var(--text-primary); font-family:'Sreda',serif;">🎙️ 1-Tap Vernacular Voice Khata</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.container(border=True):
+            st.caption("Speak in Kannada, Hinglish, Tamil, or Retail English. AI extracts customer name, items, cash, and udhaar automatically:")
+            
+            spoken_text = speech_to_text(language="kn-IN", start_prompt="🎙️ Tap to Record Voice Note", stop_prompt="⏹️ Stop Recording", key="mobile_mic_rec")
+            if spoken_text:
+                st.session_state.live_transcribed_text = spoken_text
+
+            if st.button("⚡ Test Voice Simulation (Kanglish)", key="m_btn_test_voice", use_container_width=True):
+                st.session_state.live_transcribed_text = "Suresh Gowda ge 2 packet Nandini milk kotte, 60 rupees cash kottidaane, sugar baki 45 rupees."
+
+            curr_v_text = st.session_state.get("live_transcribed_text", "")
+            if curr_v_text:
+                v_res = analyze_voice_transcript(curr_v_text, api_key="", fail_safe=True)
+                st.markdown(f"""
+                <div style="background:var(--card-bg); border:1px solid var(--hairline-border); border-radius:12px; padding:10px 14px; margin:8px 0;">
+                    <div style="font-size:0.75rem; color:var(--accent-color); font-weight:800;">TRANSCRIPTION:</div>
+                    <div style="font-size:0.86rem; color:var(--text-primary); font-style:italic;">"{curr_v_text}"</div>
+                    <div style="margin-top:8px; display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:0.8rem;">
+                        <div>👤 <b>Customer:</b> {v_res.get('customer')}</div>
+                        <div>🌐 <b>Dialect:</b> {v_res.get('language')}</div>
+                        <div>💵 <b>Cash Paid:</b> <span style="color:#10B981; font-weight:700;">₹{v_res.get('cash')}</span></div>
+                        <div>🔴 <b>Udhaar Due:</b> <span style="color:#EF4444; font-weight:700;">₹{v_res.get('udhaar')}</span></div>
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+                
+                if st.button("➕ Confirm & Add to Khata", type="primary", use_container_width=True, key="m_btn_add_voice_khata"):
+                    gen_v_txn = f"TXN-{random.randint(1000, 9999)}"
+                    v_entry = {
+                        "id": gen_v_txn,
+                        "txn_id": gen_v_txn,
+                        "customer_sl": f"SL-{len(st.session_state.ledger_db) + 1:04d}",
+                        "customer_id": f"CID-{random.randint(100, 600):04d}",
+                        "customer": v_res.get("customer", "Customer"),
+                        "email": "@gmail.com",
+                        "phone": "+91 98450 11223",
+                        "date": datetime.date(2026, 11, 4).strftime("%Y-%m-%d"),
+                        "account_type": "Udhaar Account" if v_res.get("udhaar", 0) > 0 else "Sales Account",
+                        "items": ", ".join(v_res.get("items", ["Kirana Goods"])),
+                        "total_amount": int(v_res.get("total", 0)),
+                        "paid_amount": int(v_res.get("cash", 0)),
+                        "balance_due": int(v_res.get("udhaar", 0)),
+                        "advance_payment": 0,
+                        "status": "Pending Udhaar" if v_res.get("udhaar", 0) > 0 else "Fully Paid",
+                        "payment_mode": "Partial Cash" if v_res.get("cash", 0) > 0 else "Credit",
+                        "category": "Regular Kirana Buyer",
+                        "notes": "Recorded via Vernacular Voice Khata"
+                    }
+                    st.session_state.ledger_db.insert(0, v_entry)
+                    save_ledger_to_disk()
+                    play_success_sound()
+                    st.balloons()
+                    st.toast(f"🎉 Voice bill added for {v_entry['customer']}!", icon="🎙️")
+                    st.rerun()
+
+    elif m_action == "📸 Scan Bill":
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:8px; margin:6px 0 8px 0;">
+            <span style="font-size:1rem; font-weight:800; color:var(--text-primary); font-family:'Sreda',serif;">📸 Camera / Vision Receipt OCR</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        with st.container(border=True):
+            st.caption("Snap a photo of any handwritten or printed store receipt:")
+            m_uploaded_file = st.file_uploader("Upload Store Receipt Photo:", type=["png", "jpg", "jpeg"], key="m_file_up")
+            
+            if st.button("⚡ Test Sample Receipt Photo", key="m_btn_test_receipt", use_container_width=True):
+                sample_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "sample_data", "sample_bill.png")
+                if os.path.exists(sample_path):
+                    with open(sample_path, "rb") as f:
+                        st.session_state["m_sample_receipt_bytes"] = f.read()
+                    st.success("Sample receipt loaded!")
+
+            r_bytes = st.session_state.get("m_sample_receipt_bytes") or (m_uploaded_file.getvalue() if m_uploaded_file else None)
+            if r_bytes:
+                st.image(r_bytes, caption="Uploaded Store Receipt", use_container_width=True)
+                ocr_res = analyze_receipt(r_bytes, api_key="", fail_safe=True)
+                
+                st.markdown(f"""
+                <div style="background:var(--card-bg); border:1px solid var(--hairline-border); border-radius:12px; padding:10px 14px; margin:8px 0; font-size:0.82rem;">
+                    <div>🏪 <b>Store:</b> {ocr_res.get('store_name')}</div>
+                    <div>👤 <b>Customer:</b> {ocr_res.get('customer')}</div>
+                    <div>💰 <b>Total Bill:</b> <span style="font-size:1.05rem; font-weight:800; color:#10B981;">₹{ocr_res.get('total_amount')}</span></div>
+                    <div>📋 <b>Items:</b> {', '.join([i['name'] for i in ocr_res.get('items', [])])}</div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                if st.button("💾 Save Receipt to Ledger", type="primary", use_container_width=True, key="m_btn_save_receipt"):
+                    gen_r_txn = f"TXN-{random.randint(1000, 9999)}"
+                    r_entry = {
+                        "id": gen_r_txn,
+                        "txn_id": gen_r_txn,
+                        "customer_sl": f"SL-{len(st.session_state.ledger_db) + 1:04d}",
+                        "customer_id": f"CID-{random.randint(100, 600):04d}",
+                        "customer": ocr_res.get("customer", "Kirana Customer"),
+                        "email": "@gmail.com",
+                        "phone": "+91 98450 12345",
+                        "date": datetime.date(2026, 11, 4).strftime("%Y-%m-%d"),
+                        "account_type": "Sales Account",
+                        "items": ", ".join([i['name'] for i in ocr_res.get('items', [])]),
+                        "total_amount": int(ocr_res.get("total_amount", 0)),
+                        "paid_amount": int(ocr_res.get("total_amount", 0)),
+                        "balance_due": 0,
+                        "advance_payment": 0,
+                        "status": "Fully Paid",
+                        "payment_mode": "Cash",
+                        "category": "Regular Kirana Buyer",
+                        "notes": "Scanned via Gemini Vision OCR"
+                    }
+                    st.session_state.ledger_db.insert(0, r_entry)
+                    save_ledger_to_disk()
+                    play_success_sound()
+                    st.balloons()
+                    st.toast("🎉 Scanned receipt saved to ledger!", icon="📸")
+                    st.rerun()
+
+    elif m_action == "📒 Udhaar List":
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:8px; margin:6px 0 8px 0;">
+            <span style="font-size:1rem; font-weight:800; color:var(--text-primary); font-family:'Sreda',serif;">📒 Active Udhaar & 1-Tap WhatsApp Nudge</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        debtor_customers = [c for c in customer_dir if c["total_balance_due"] > 0]
+        debtor_customers.sort(key=lambda x: x["total_balance_due"], reverse=True)
+        
+        st.caption(f"Showing {len(debtor_customers)} customer accounts with pending credit balances:")
+        
+        for d in debtor_customers[:15]:
+            clean_m_phone = "".join([c for c in d["phone"] if c.isdigit()])
+            if len(clean_m_phone) == 10:
+                clean_m_phone = "91" + clean_m_phone
+            
+            nudge_msg = f"Namaskara {d['customer']} avare, this is a friendly reminder from Sri Manjunatha Provision Store regarding your pending kirana balance of ₹{d['total_balance_due']:,}. Kindly clear via UPI or cash on your next visit. Dhanyavadagalu!"
+            wa_nudge_url = f"https://api.whatsapp.com/send?phone={clean_m_phone}&text={urllib.parse.quote(nudge_msg)}"
+            upi_intent = f"upi://pay?pa=prithvi.j@ibl&pn=Sri%20Manjunatha%20Store&am={d['total_balance_due']}&cu=INR"
+            
+            st.markdown(f"""
+            <div style="background:var(--card-bg); border:1px solid var(--hairline-border); border-left:4px solid #EF4444; border-radius:12px; padding:10px 14px; margin-bottom:8px; box-shadow:0 2px 8px rgba(0,0,0,0.04);">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <div style="font-weight:800; font-size:0.95rem; color:var(--text-primary);">{d['customer']}</div>
+                        <div style="font-size:0.75rem; color:var(--text-secondary);">📞 {d['phone']} • CID: <code>{d['customer_id']}</code></div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:1.15rem; font-weight:800; color:#EF4444; font-family:'Sreda',serif;">₹{d['total_balance_due']:,}</div>
+                        <div style="font-size:0.68rem; color:#EF4444; font-weight:700;">UDHAAR DUE</div>
+                    </div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            m_col_btn1, m_col_btn2 = st.columns(2)
+            with m_col_btn1:
+                st.link_button("💬 WhatsApp Nudge", wa_nudge_url, use_container_width=True)
+            with m_col_btn2:
+                st.link_button("⚡ Pay via UPI", upi_intent, use_container_width=True)
+
+    elif m_action == "📋 Quick Ledger":
+        st.markdown("""
+        <div style="display:flex; align-items:center; gap:8px; margin:6px 0 8px 0;">
+            <span style="font-size:1rem; font-weight:800; color:var(--text-primary); font-family:'Sreda',serif;">📋 Mobile Transaction Feed</span>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        m_feed_filter = st.radio("Filter Feed:", ["All Records", "Udhaar Only", "Cash Only"], horizontal=True, label_visibility="collapsed", key="m_radio_feed_flt")
+        
+        df_feed = pd.DataFrame(st.session_state.ledger_db)
+        if "Udhaar Only" in m_feed_filter:
+            df_feed = df_feed[df_feed["balance_due"] > 0]
+        elif "Cash Only" in m_feed_filter:
+            df_feed = df_feed[df_feed["balance_due"] == 0]
+            
+        m_search_q = st.text_input("🔍 Filter by customer name or phone:", placeholder="Type to search...", key="m_feed_search")
+        if m_search_q.strip():
+            sq = m_search_q.strip().lower()
+            df_feed = df_feed[df_feed["customer"].str.lower().str.contains(sq, na=False) | df_feed["phone"].str.contains(sq, na=False)]
+
+        st.caption(f"Showing latest {min(30, len(df_feed))} of {len(df_feed):,} transactions:")
+        
+        for idx_row, row in df_feed.head(25).iterrows():
+            is_due = int(row.get("balance_due", 0)) > 0
+            badge_color = "#EF4444" if is_due else "#10B981"
+            badge_bg = "rgba(239,68,68,0.12)" if is_due else "rgba(16,185,129,0.12)"
+            badge_txt = f"🔴 Due ₹{row.get('balance_due'):,}" if is_due else f"🟢 Paid ₹{row.get('paid_amount'):,}"
+            
+            st.markdown(f"""
+            <div style="background:var(--card-bg); border:1px solid var(--hairline-border); border-radius:10px; padding:8px 12px; margin-bottom:6px; font-size:0.8rem; display:flex; justify-content:space-between; align-items:center;">
+                <div>
+                    <div style="font-weight:800; color:var(--text-primary);">{row.get('customer')}</div>
+                    <div style="font-size:0.72rem; color:var(--text-secondary);">{row.get('date')} • {row.get('items', 'Kirana goods')[:32]}</div>
+                </div>
+                <div style="text-align:right;">
+                    <span style="background:{badge_bg}; color:{badge_color}; font-weight:800; padding:2px 8px; border-radius:6px; font-size:0.72rem;">{badge_txt}</span>
+                    <div style="font-size:0.72rem; color:var(--text-muted); margin-top:2px;">Total: ₹{row.get('total_amount'):,}</div>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
 
 
 # ==============================================================================
