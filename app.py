@@ -1787,13 +1787,15 @@ def render_mobile_kirana_os():
     </div>
     """, unsafe_allow_html=True)
 
-    # Header Action Switchers: Switch to Laptop View + Theme
-    m_h1, m_h2 = st.columns([2, 1])
+    # Header Action Switchers: Switch to Laptop View + Pitch Deck + Theme
+    m_h1, m_h2, m_h3 = st.columns([1.3, 1.3, 1.1])
     with m_h1:
-        if st.button("💻 Switch to Laptop View", key="btn_mobile_to_laptop", use_container_width=True):
+        if st.button("💻 Laptop View", key="btn_mobile_to_laptop", use_container_width=True):
             toggle_device_view("desktop")
             st.rerun()
     with m_h2:
+        st.link_button("🎬 Pitch Deck", "/app/static/presentation.html", use_container_width=True)
+    with m_h3:
         thm_icon = "☀️ Light" if is_dark else "🌙 Dark"
         if st.button(thm_icon, key="btn_mobile_thm_toggle", use_container_width=True):
             new_theme = "light" if is_dark else "dark"
@@ -2279,6 +2281,10 @@ Kirana store owners primarily run their operations on smartphones. Scan this QR 
 </p>
 <div style="background:var(--card-bg); border:1px solid var(--hairline-border); border-radius:12px; padding:10px 14px; font-family:monospace; font-size:0.82rem; color:var(--accent-color); margin-bottom:10px;">
 https://oral-massachusetts-hardcover-ali.trycloudflare.com
+</div>
+<div style="display:flex; gap:10px; margin-bottom:10px;">
+<a href="/app/static/presentation.html" target="_blank" style="background:linear-gradient(135deg, #0284C7, #2563EB); color:white; padding:8px 14px; border-radius:10px; text-decoration:none; font-weight:800; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px; box-shadow:0 4px 14px rgba(2,132,199,0.4);">🎬 Open Animated Pitch Deck (Fullscreen)</a>
+<a href="/app/static/VyaparDost_AI_Competition_Pitch.pptx" download style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.2); color:white; padding:8px 14px; border-radius:10px; text-decoration:none; font-weight:700; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">📥 Download PPTX File</a>
 </div>
 </div>""", unsafe_allow_html=True)
             if st.button("✖ Close QR Gateway", key="btn_close_judge_qr"):
